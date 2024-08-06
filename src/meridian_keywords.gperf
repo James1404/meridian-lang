@@ -1,0 +1,34 @@
+%{
+#include "meridian_tokens.h"
+%}
+
+%struct-type
+%enum
+%compare-strncmp
+%define lookup-function-name Meridian_KeywordsLookup
+%define hash-function-name Meridian_KeywordsHash
+
+struct Keyword {
+    const char* name;
+    int tt;
+}
+
+%%
+# Meridian reserved keywords
+let, TOKEN_LET
+true, TOKEN_TRUE
+false, TOKEN_FALSE
+fn, TOKEN_FN
+if, TOKEN_IF
+then, TOKEN_THEN
+else, TOKEN_ELSE
+%%
+TokenType Meridian_GetKeyword(String src, Token t) {
+    struct Keyword* k = Meridian_KeywordsLookup(src.raw + t.start, t.len);
+
+    if(!k) {
+        return TOKEN_IDENT;
+    }
+
+    return (TokenType)k->tt;
+}

@@ -24,7 +24,13 @@ CPPFLAGS = -Wall -pedantic -g -O2 -std=c++20 $(INCLUDE_DIRS)
 LDFLAGS =\
 	      `llvm-config --libs`
 
+GPERF := $(shell find $(SRC_DIR)/ -type f -iname \*.gperf)
+GPERF_SRC := $(patsubst %.gperf,%.c,$(GPERF))
+
 SRC := $(shell find $(SRC_DIR)/ -type f \( -iname \*.c -o -iname \*.cpp \))
+
+SRC += $(GPERF_SRC)
+
 OBJ := $(addprefix $(CACHE_DIR)/, $(addsuffix .o,$(basename $(notdir $(SRC)))))
 
 $(BUILD_DIR)/$(EXE): $(OBJ) | $(BUILD_DIR) $(CACHE_DIR) $(BUILD_DIR)/$(TEST_DIR) $(BUILD_DIR)/$(STD_DIR)
@@ -41,6 +47,9 @@ $(CACHE_DIR)/%.o: $(SRC_DIR)/%.c | $(CACHE_DIR)
 $(CACHE_DIR)/%.o: $(SRC_DIR)/%.cpp | $(CACHE_DIR)
 	@echo Building: $(notdir $<)
 	@$(CPP) $(CPPFLAGS) -c $< -o $@
+
+$(SRC_DIR)/%.c: $(SRC_DIR)/%.gperf
+	gperf $< > $@
 
 $(BUILD_DIR):
 	@echo Making \'$@\' directory
