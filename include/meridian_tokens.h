@@ -34,7 +34,11 @@ typedef enum {
   TOKEN_TRUE,
   TOKEN_FALSE,
 
+  TOKEN_ARROW,
+
   TOKEN_LET,
+
+  TOKEN_TYPE,
 
   TOKEN_FN,
 
@@ -46,7 +50,7 @@ typedef enum {
 typedef struct {
     TokenType tt;
 
-    u32 start, len, line, location;
+    u32 start, len, line, lineOffset;
 } Token;
 
 TokenType Meridian_GetKeyword(String src, Token t);

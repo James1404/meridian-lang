@@ -1,9 +1,8 @@
-#include <stdio.h>
-
+#include "meridian.h"
 #include "meridian_common.h"
 
 i32 main(void) {
-    printf("Hello, world\n");
+    Meridian_run_file("test/lexer.mr");
     
     return 0;
 }

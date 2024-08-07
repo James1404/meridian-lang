@@ -7,7 +7,7 @@
 typedef struct {
     String src;
 
-    u64 current, line, loc;
+    u64 current, line, lineOffset;
 
     Token* tokens;
     u64 tokensLen, tokensAllocated;
@@ -16,6 +16,8 @@ typedef struct {
 Lexer Lexer_new(String src);
 void Lexer_free(Lexer *lexer);
 
-void Lexer_run(Lexer* lexer);
+void Lexer_run(Lexer *lexer);
+
+void Lexer_print(Lexer* lexer);
 
 #endif//MERIDIAN_LEX_H

@@ -22,6 +22,8 @@ fn, TOKEN_FN
 if, TOKEN_IF
 then, TOKEN_THEN
 else, TOKEN_ELSE
+type, TOKEN_TYPE
+->, TOKEN_ARROW
 %%
 TokenType Meridian_GetKeyword(String src, Token t) {
     struct Keyword* k = Meridian_KeywordsLookup(src.raw + t.start, t.len);
