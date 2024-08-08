@@ -34,11 +34,18 @@ typedef enum {
   TOKEN_TRUE,
   TOKEN_FALSE,
 
+  TOKEN_ASSIGN,
   TOKEN_ARROW,
 
-  TOKEN_LET,
+  TOKEN_SEMICOLON,
+  TOKEN_COLON,
+
+  TOKEN_LET, TOKEN_IN,
+
+  TOKEN_MATCH,
 
   TOKEN_TYPE,
+  TOKEN_DEF,
 
   TOKEN_FN,
 
@@ -54,5 +61,17 @@ typedef struct {
 } Token;
 
 TokenType Meridian_GetKeyword(String src, Token t);
+
+typedef struct {
+    Token* data;
+    u64 len, allocated;
+
+    String src;
+} TokenList;
+
+TokenList TokenList_make(String src);
+void TokenList_free(TokenList *list);
+
+void TokenList_push(TokenList* list, Token elem);
 
 #endif//MERIDIAN_TOKENS_H

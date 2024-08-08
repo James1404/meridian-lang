@@ -38,6 +38,7 @@ $(BUILD_DIR)/$(EXE): $(OBJ) | $(BUILD_DIR) $(CACHE_DIR) $(BUILD_DIR)/$(TEST_DIR)
 	@$(CPP) -o $@ $^ $(LDFLAGS)
 
 run: $(BUILD_DIR)/$(EXE)
+	@echo Running: \"$(EXE)\"
 	@(cd $(BUILD_DIR) && ./$(EXE))
 
 $(CACHE_DIR)/%.o: $(SRC_DIR)/%.c | $(CACHE_DIR)

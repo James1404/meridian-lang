@@ -1,3 +1,8 @@
-type x = 25
+type x = 25;
 
-let a = fn x y -> what is up "hey"
+def square = fn x -> * x x;
+def a = fn x y -> what is up "hey";
+
+def double = fn x -> (fn y -> x * y);
+
+def x = let a = 25 in double a 2;

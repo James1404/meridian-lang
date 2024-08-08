@@ -1,6 +1,10 @@
 #include "meridian.h"
 #include "meridian_error.h"
 #include "meridian_lex.h"
+#include "meridian_parser.h"
+#include "meridian_tokens.h"
+#include "meridian_string.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -11,13 +15,16 @@ void Meridian_free(void) {}
 void Meridian_builtin(void) {}
 
 void Meridian_run(char *src, u64 len) {
-    Lexer lexer = Lexer_new((String) { src, len });
+    TokenList tokens = TokenList_make((String) { src, len });
+    
+    Lexer lexer = Lexer_new(&tokens);
 
     Lexer_run(&lexer);
 
     Lexer_print(&lexer);
 
     Lexer_free(&lexer);
+    TokenList_free(&tokens);
 }
 
 void Meridian_run_file(const char *filepath) {

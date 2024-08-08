@@ -7,13 +7,12 @@
 typedef struct {
     String src;
 
-    u64 current, line, lineOffset;
+    u64 current, start, line, lineOffset;
 
-    Token* tokens;
-    u64 tokensLen, tokensAllocated;
+    TokenList* tokens;
 } Lexer;
 
-Lexer Lexer_new(String src);
+Lexer Lexer_new(TokenList* out);
 void Lexer_free(Lexer *lexer);
 
 void Lexer_run(Lexer *lexer);

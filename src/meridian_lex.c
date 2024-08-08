@@ -1,25 +1,22 @@
 #include "meridian_lex.h"
 #include "meridian_tokens.h"
+#include "meridian_error.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 
-Lexer Lexer_new(String src) {
+Lexer Lexer_new(TokenList* out) {
     return (Lexer) {
-        .src = src,
+        .src = out->src,
         .current = 0,
         .line = 1,
         .lineOffset = 1,
 
-        .tokens = NULL,
-        .tokensLen = 0,
-        .tokensAllocated = 8,
+        .tokens = out,
     };
 }
 void Lexer_free(Lexer *lexer) {
-    free(lexer->tokens);
-    
-    *lexer = Lexer_new(lexer->src);
+    *lexer = Lexer_new(lexer->tokens);
 }
 
 static bool IsNumber(char c) { return c >= '0' && c <= '9'; }
@@ -38,6 +35,7 @@ static bool IsUniqueCharacter(char c) {
     case '_':
     case '>':
     case '<':
+    case '=':
         return true;
     default: return false;
     }
@@ -57,27 +55,57 @@ static bool Lexer_match(Lexer* lexer, char expected) {
 }
 
 static void Lexer_add(Lexer* lexer, Token token) {
-    if(!lexer->tokens) {
-        lexer->tokensAllocated = 8;
-        lexer->tokens = malloc(sizeof(*lexer->tokens) * lexer->tokensAllocated);
-    }
+    TokenList_push(lexer->tokens, token);
+}
 
-    u32 idx = lexer->tokensLen++;
-
+static void Lexer_add_single(Lexer* lexer, TokenType tt) {
+    Lexer_advance(lexer);
     
+    Token t = {
+        .tt = tt,
+        .start = lexer->start,
+        .len = lexer->current - lexer->start,
+        .line = lexer->line,
+        .lineOffset = lexer->lineOffset,
+    };
+
+    Lexer_add(lexer, t);
 }
 
 void Lexer_run(Lexer *lexer) {
     while(lexer->current < lexer->src.len) {
         char c = Lexer_current(lexer);
 
-        u32 start = lexer->current;
+        lexer->start = lexer->current;
 
         switch(c) {
-        case '(':
-            while(!Lexer_match(lexer, ')')) {
-                Lexer_advance(lexer);
-            }
+        case '(': Lexer_add_single(lexer, TOKEN_LPAREN); break;
+        case ')': Lexer_add_single(lexer, TOKEN_RPAREN); break;
+
+        case '{': Lexer_add_single(lexer, TOKEN_LBRACE); break;
+        case '}': Lexer_add_single(lexer, TOKEN_RBRACE); break;
+
+        case '[': Lexer_add_single(lexer, TOKEN_LBRACKET); break;
+        case ']': Lexer_add_single(lexer, TOKEN_RBRACKET); break;
+
+        case ';': Lexer_add_single(lexer, TOKEN_SEMICOLON); break;
+        case ':': Lexer_add_single(lexer, TOKEN_COLON); break;
+            
+        case '"':
+            Lexer_advance(lexer);
+            while(!Lexer_match(lexer, '"')) Lexer_advance(lexer);
+
+            Lexer_advance(lexer);
+
+            Token t = {
+                .start = lexer->start + 1,
+                .len = lexer->current - lexer->start - 1,
+                .tt = TOKEN_STRING,
+                .line = lexer->line,
+                .lineOffset = lexer->lineOffset,
+            };
+
+            Lexer_add(lexer, t);
             break;
             
         case '#':
@@ -100,8 +128,8 @@ void Lexer_run(Lexer *lexer) {
                 }
 
                 Token t = {
-                    .start = start,
-                    .len = lexer->current - start,
+                    .start = lexer->start,
+                    .len = lexer->current - lexer->start,
                     .line = lexer->line,
                     .lineOffset = lexer->lineOffset,
                     .tt = TOKEN_IDENT
@@ -133,8 +161,8 @@ void Lexer_run(Lexer *lexer) {
                 } while (true);
                 
                 Lexer_add(lexer, (Token) {
-                        .start = start,
-                        .len = lexer->current - start,
+                        .start = lexer->start,
+                        .len = lexer->current - lexer->start,
                         .line = lexer->line,
                         .lineOffset = lexer->lineOffset,
                         .tt = ty
@@ -143,18 +171,21 @@ void Lexer_run(Lexer *lexer) {
                 continue;
             }
 
+            Meridian_error("Unknown Characted '%c'", c);
             Lexer_advance(lexer);
             break;
         }
     }
 }
 
-
 void Lexer_print(Lexer *lexer) {
-    printf("<-- Lexer :: { tokensLen = %lu; } -->\n", lexer->tokensLen);
-    for(u32 i = 0; i < lexer->tokensLen; i++) {
-        Token t = lexer->tokens[i];
+    printf("<-- Lexer :: { tokensLen = %lu; } -->\n", lexer->tokens->len);
+    for(u32 i = 0; i < lexer->tokens->len; i++) {
+        Token t = lexer->tokens->data[i];
 
-        printf("Token :: { tt = %i; line = %i; }\n", t.tt, t.line);
+        char* text = lexer->src.raw + t.start;
+        u32 textLen = t.len;
+
+        printf("Token :: { text = \"%.*s\"; tt = %i; line = %i; }\n", textLen, text, t.tt, t.line);
     }
 }
