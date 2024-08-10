@@ -110,6 +110,22 @@ void ASTList_prettyPrint(ASTList* list, u64 indentation, AST_Idx node) {
 
         printf(")");
         break;
+    case AST_IF:
+        printf("(");
+        printf("if ");
+        
+        ASTList_prettyPrint(list, indentation, AST_VALUE(list, node, AST_IF).cond);
+
+        printf(" then ");
+        
+        ASTList_prettyPrint(list, indentation, AST_VALUE(list, node, AST_IF).t);
+        
+        printf(" else ");
+
+        ASTList_prettyPrint(list, indentation, AST_VALUE(list, node, AST_IF).f);
+
+        printf(")");
+        break;
         
     case AST_DEFINE:
         printf("define ");

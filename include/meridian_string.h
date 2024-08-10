@@ -13,6 +13,12 @@
     dst = STR_ALLOC((src).len);                                                \
     strncpy((dst).raw, (src).raw, (src).len);                                  \
   } while (0)
+#define STR_CPY_ALLOC_NULL(dst, src)                                                \
+  do {                                                                         \
+    dst = STR_ALLOC((src).len + 1);                                                \
+    strncpy((dst).raw, (src).raw, (src).len);                                  \
+    dst.raw[(src).len] = '\0';\
+  } while (0)
 
 #define STR_FREE(str)                                                          \
   do {                                                                         \
@@ -22,7 +28,7 @@
 
 typedef struct {
     char* raw;
-    u64 len;
+    i32 len;
 } String;
 
 #endif// MERIDIAN_STRING_H

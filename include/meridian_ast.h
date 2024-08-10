@@ -29,6 +29,8 @@ typedef struct AST {
         AST_ABSTRACTION,
 
         AST_LET,
+
+        AST_IF,
         
         AST_DEFINE,
         AST_TYPEDEF,
@@ -69,6 +71,10 @@ typedef struct AST {
 
             AST_Idx in;
         } AST_LET;
+
+        struct {
+            AST_Idx cond, t, f;
+        } AST_IF;
 
         struct {
             AST_Idx name;

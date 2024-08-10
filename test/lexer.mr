@@ -1,1 +1,1 @@
-def hey = let y = 25 in x;
+def hey = if 25 then 3 else 2;

@@ -4,12 +4,12 @@
 #include "meridian_ast.h"
 
 typedef struct {
-    Ast* tree;
+    AST* tree;
 } Codegen;
 
 Codegen Codegen_init(void);
 void Codegen_free(Codegen* gen);
 
-void Codegen_run(Codegen* gen, Ast* tree);
+void Codegen_run(Codegen* gen, AST* tree);
 
 #endif//MERIDIAN_CODEGEN_H

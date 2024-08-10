@@ -20,6 +20,7 @@
               clang-tools
               llvm_18
               pandoc
+              valgrind
             ];
           };
         }

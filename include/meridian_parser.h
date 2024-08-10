@@ -25,6 +25,7 @@ AST_Idx Parser_Stmt(Parser *parser);
 AST_Idx Parser_Define(Parser *parser);
 AST_Idx Parser_TypeDef(Parser *parser);
 AST_Idx Parser_Let(Parser *parser);
+AST_Idx Parser_If(Parser *parser);
 
 AST_Idx Parser_Abstraction(Parser *parser);
 

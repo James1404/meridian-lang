@@ -52,7 +52,10 @@ void Meridian_run_file(const char *filepath) {
     fseek(file, 0, SEEK_SET);
     char* buffer = malloc(len);
 
-    fread(buffer, 1, len, file);
+    if(fread(buffer, 1, len, file) != len) {
+        Meridian_error("Meridian_run_file :: fread failed");
+        return;
+    }
     fclose(file);
 
     Meridian_run(buffer, len); 
