@@ -25,16 +25,38 @@ typedef struct {
 } Value;
 
 typedef struct {
+    String id;
+    Value value;
+    u64 scope;
+} Local;
+
+typedef struct {
+    Local* locals;
+    u64 len, allocated, scope;
+} Env;
+
+
+typedef struct {
     u64 pc;
 
     Program code;
 
     Value* stack;
     u64 stackTop, stackAllocated;
+
+    Local* locals;
+    u64 localsLen, localsAllocated;
+    u64 localsScope;
 } VM;
 
 VM VM_make(Program code);
 void VM_free(VM *vm);
+
+void VM_inc(VM *vm);
+void VM_dec(VM *vm);
+
+void VM_set(VM* vm, String id, Value value);
+Value VM_get(VM* vm, String id);
 
 void VM_run(VM* vm);
 
