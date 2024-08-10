@@ -1,7 +1,14 @@
 #include "meridian_eval.h"
 #include <stdlib.h>
 
-Env Env_make(void);
+Env Env_make(void) {
+    return (Env) {
+        .locals = NULL,
+        .scope = 0,
+        .len = 0,
+        .allocated = 8,
+    };
+}
 
 void Env_free(Env* env) {
     free(env->locals);
