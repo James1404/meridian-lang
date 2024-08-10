@@ -21,10 +21,14 @@ void Meridian_run(char *src, u64 len) {
     Lexer lexer = Lexer_new(&tokens);
     Lexer_run(&lexer);
 
+    if(Meridian_error_found()) return;
+
     ASTList initialAST = ASTList_make();
 
     Parser parser = Parser_make(&tokens, &initialAST);
     Parser_run(&parser);
+
+    if(Meridian_error_found()) return;
 
     ASTList_prettyPrint(&initialAST, 0, parser.root);
 

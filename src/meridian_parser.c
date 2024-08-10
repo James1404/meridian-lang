@@ -97,6 +97,15 @@ AST_Idx Parser_Value(Parser *parser) {
         return result;
     }
 
+    case TOKEN_LET: {
+        return Parser_Let(parser);
+    }
+    case TOKEN_IN: {
+        Parser_adv(parser);
+        Meridian_error("Unexpected 'in'");
+        return AST_MAKE(parser->tree, AST_NULL);
+    }
+
     case TOKEN_LPAREN: {
         Parser_adv(parser);
         AST_Idx result = Parser_Expression(parser);
@@ -124,6 +133,32 @@ AST_Idx Parser_Value(Parser *parser) {
     }
 }
 
+AST_Idx Parser_Let(Parser *parser) {
+    AST_Idx result = AST_MAKE(parser->tree, AST_LET);
+    
+    if(!Parser_match(parser, TOKEN_LET)) {
+        return AST_MAKE(parser->tree, AST_NULL);
+    }
+
+    AST_VALUE(parser->tree, result, AST_LET).name = Parser_Ident(parser);
+
+    if(!Parser_match(parser, TOKEN_ASSIGN)) {
+        Meridian_error("Expected '=' in let");
+        return AST_MAKE(parser->tree, AST_NULL);
+    }
+
+    AST_VALUE(parser->tree, result, AST_LET).value = Parser_Expression(parser);
+
+    if(!Parser_match(parser, TOKEN_IN)) {
+        Meridian_error("Expected 'in' in let");
+        return AST_MAKE(parser->tree, AST_NULL);
+    }
+
+    AST_VALUE(parser->tree, result, AST_LET).in = Parser_Expression(parser);
+
+    return result;
+}
+
 AST_Idx Parser_Expression(Parser* parser) {
     return Parser_Value(parser);
 }
@@ -142,7 +177,7 @@ AST_Idx Parser_Abstraction(Parser* parser) {
         return AST_MAKE(parser->tree, AST_NULL);
     }
 
-    AST_VALUE(parser->tree, result, AST_ABSTRACTION).body = Parser_Value(parser);
+    AST_VALUE(parser->tree, result, AST_ABSTRACTION).body = Parser_Expression(parser);
 
     return result;
 }

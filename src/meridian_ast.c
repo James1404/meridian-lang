@@ -95,6 +95,7 @@ void ASTList_prettyPrint(ASTList* list, u64 indentation, AST_Idx node) {
 
         
     case AST_LET:
+        printf("(");
         printf("let ");
         
         ASTList_prettyPrint(list, indentation, AST_VALUE(list, node, AST_LET).name);
@@ -106,6 +107,8 @@ void ASTList_prettyPrint(ASTList* list, u64 indentation, AST_Idx node) {
         printf(" in ");
 
         ASTList_prettyPrint(list, indentation, AST_VALUE(list, node, AST_LET).in);
+
+        printf(")");
         break;
         
     case AST_DEFINE:

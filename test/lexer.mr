@@ -1,2 +1,1 @@
-def square = fn x -> fn y -> true;
-
+def hey = let y = 25 in x;

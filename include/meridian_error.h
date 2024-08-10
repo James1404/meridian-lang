@@ -1,6 +1,9 @@
 #ifndef MERIDIAN_ERROR_H
 #define MERIDIAN_ERROR_H
 
-void Meridian_error(const char* format, ...);
+#include "meridian_common.h"
+
+void Meridian_error(const char *format, ...);
+bool Meridian_error_found(void);
 
 #endif//MERIDIAN_ERROR_H
