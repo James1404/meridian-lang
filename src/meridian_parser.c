@@ -56,14 +56,39 @@ AST_Idx Parser_Value(Parser *parser) {
     }
         
     case TOKEN_INT: {
-        AST_Idx result = AST_MAKE_V(parser->tree, AST_INTEGER, 25);
+        String text = TOKENLIST_text(parser->tokens, Parser_current(parser));
+
+        String cpy;
+        STR_CPY_ALLOC(cpy, text);
+
+        AST_Idx result = AST_MAKE_V(parser->tree, AST_INTEGER, strtoll(cpy.raw, NULL, 10));
+
+        STR_FREE(cpy);
+
         Parser_adv(parser);
         return result;
     }
     case TOKEN_FLOAT: {
-        AST_Idx result = AST_MAKE_V(parser->tree, AST_FLOAT, 25.0f);
+        String text = TOKENLIST_text(parser->tokens, Parser_current(parser));
+
+        String cpy;
+        STR_CPY_ALLOC(cpy, text);
+
+        AST_Idx result = AST_MAKE_V(parser->tree, AST_FLOAT, strtof(cpy.raw, NULL));
+
+        STR_FREE(cpy);
+
         Parser_adv(parser);
         return result;
+    }
+
+    case TOKEN_TRUE: {
+        Parser_adv(parser);
+        return AST_MAKE_V(parser->tree, AST_BOOLEAN, true);
+    }
+    case TOKEN_FALSE: {
+        Parser_adv(parser);
+        return AST_MAKE_V(parser->tree, AST_BOOLEAN, false);
     }
 
     case TOKEN_STRING: {
@@ -72,12 +97,30 @@ AST_Idx Parser_Value(Parser *parser) {
         return result;
     }
 
+    case TOKEN_LPAREN: {
+        Parser_adv(parser);
+        AST_Idx result = Parser_Expression(parser);
+        if(!Parser_match(parser, TOKEN_RPAREN)) {
+            Meridian_error("Expected closing ')'");
+            return AST_MAKE(parser->tree, AST_NULL);
+        }
+        
+        return result;
+    }
+        
+    case TOKEN_RPAREN: {
+        Parser_adv(parser);
+        Meridian_error("Unexpected ')'");
+        return AST_MAKE(parser->tree, AST_NULL);
+    }
+
     case TOKEN_FN: {
         return Parser_Abstraction(parser);
     }
         
-    default:
+    default: {
         return AST_MAKE(parser->tree, AST_NULL);
+    }
     }
 }
 

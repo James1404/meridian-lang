@@ -1,2 +1,2 @@
-def square = fn x -> fn y -> "what";
+def square = fn x -> fn y -> true;
 
