@@ -5,8 +5,12 @@
 #include "meridian_string.h"
 #include "meridian_tokens.h"
 
-typedef struct Ast {
+typedef u64 AST_Idx;
+
+typedef struct AST {
     enum {
+        AST_NULL,
+        
         AST_INTEGER,
         AST_FLOAT,
 
@@ -15,10 +19,11 @@ typedef struct Ast {
 
         AST_IDENT,
         
-        AST_BINARY,
-        AST_UNARY,
+        AST_CONS,
 
         AST_LIST,
+
+        AST_SCOPE,
 
         AST_APPLICATION,
         AST_ABSTRACTION,
@@ -37,50 +42,66 @@ typedef struct Ast {
         String AST_IDENT;
 
         struct {
-            struct Ast* lhs;
-            struct Ast* rhs;
-            Token op;
-        } AST_BINARY;
-        struct {
-            Token op;
-            struct Ast* node;
-        } AST_UNARY;
+            AST_Idx data, next;
+        } AST_CONS;
         
         struct {
-            struct Ast* data;
-            u64 len, allocated;
+            AST_Idx start;
         } AST_LIST;
         
         struct {
-            struct Ast* fn;
-            struct Ast* args;
-            u64 argc;
+            AST_Idx start;
+        } AST_SCOPE;
+        
+        struct {
+            AST_Idx fn;
+            AST_Idx arg;
         } AST_APPLICATION;
         struct {
-            struct Ast* args;
-            u64 argc;
-
-            struct Ast* body;
+            AST_Idx arg;
+            AST_Idx body;
         } AST_ABSTRACTION;
+        
 
         struct {
-            struct Ast* name;
-            struct Ast* value;
+            AST_Idx name;
+            AST_Idx value;
 
-            struct Ast* in;
+            AST_Idx in;
         } AST_LET;
 
         struct {
-            struct Ast* name;
-            struct Ast* body;
+            AST_Idx name;
+            AST_Idx body;
         } AST_DEFINE;
         struct {
-            struct Ast* name;
-            struct Ast* type;
+            AST_Idx name;
+            AST_Idx type;
         } AST_TYPEDEF;
     } payload;
-} Ast;
+} AST;
 
-void Ast_prettyPrint(u64 indentation, Ast* node);
+typedef struct {
+    AST* data;
+    AST_Idx len, allocated;
+} ASTList;
+
+ASTList ASTList_make(void);
+void ASTList_free(ASTList *list);
+
+AST_Idx ASTList_alloc(ASTList *list, AST node);
+
+void ASTList_prettyPrint(ASTList* list, u64 indentation, AST_Idx node);
+
+#define AST_MAKE(list, tag) (ASTList_alloc(list, (AST){tag, {0}}))
+#define AST_MAKE_V(list, tag, value)                                           \
+  (ASTList_alloc(list, (AST){tag, {.tag = value}}))
+#define AST_MAKE_S(list, tag, ...)                                             \
+  (ASTList_alloc(list, (AST){tag, {.tag = {__VA_ARGS__}}}))
+
+#define AST_GET(list, idx) ((list)->data + idx)
+
+#define AST_TY(list, idx) (AST_GET(list, idx)->tag)
+#define AST_VALUE(list, idx, tag) (AST_GET(list, idx)->payload.tag)
 
 #endif//MERIDIAN_AST_H

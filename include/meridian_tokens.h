@@ -72,6 +72,8 @@ typedef struct {
 TokenList TokenList_make(String src);
 void TokenList_free(TokenList *list);
 
-void TokenList_push(TokenList* list, Token elem);
+void TokenList_push(TokenList *list, Token elem);
+
+#define TOKENLIST_text(list, token) ((String) { list->src.raw + token.start, token.len })
 
 #endif//MERIDIAN_TOKENS_H

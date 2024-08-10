@@ -1,4 +1,5 @@
 #include "meridian.h"
+#include "meridian_ast.h"
 #include "meridian_error.h"
 #include "meridian_lex.h"
 #include "meridian_parser.h"
@@ -18,11 +19,17 @@ void Meridian_run(char *src, u64 len) {
     TokenList tokens = TokenList_make((String) { src, len });
     
     Lexer lexer = Lexer_new(&tokens);
-
     Lexer_run(&lexer);
 
-    Lexer_print(&lexer);
+    ASTList initialAST = ASTList_make();
 
+    Parser parser = Parser_make(&tokens, &initialAST);
+    Parser_run(&parser);
+
+    ASTList_prettyPrint(&initialAST, 0, parser.root);
+
+    Parser_free(&parser);
+    ASTList_free(&initialAST);
     Lexer_free(&lexer);
     TokenList_free(&tokens);
 }

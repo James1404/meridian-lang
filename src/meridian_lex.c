@@ -95,8 +95,6 @@ void Lexer_run(Lexer *lexer) {
             Lexer_advance(lexer);
             while(!Lexer_match(lexer, '"')) Lexer_advance(lexer);
 
-            Lexer_advance(lexer);
-
             Token t = {
                 .start = lexer->start + 1,
                 .len = lexer->current - lexer->start - 1,
@@ -104,7 +102,8 @@ void Lexer_run(Lexer *lexer) {
                 .line = lexer->line,
                 .lineOffset = lexer->lineOffset,
             };
-
+            
+            Lexer_advance(lexer);
             Lexer_add(lexer, t);
             break;
             
