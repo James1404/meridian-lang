@@ -31,4 +31,6 @@ typedef struct {
     i32 len;
 } String;
 
+#define STR_CMP(lhs, rhs) (strncmp((lhs).raw, (rhs).raw, (lhs).len) == 0)
+
 #endif// MERIDIAN_STRING_H

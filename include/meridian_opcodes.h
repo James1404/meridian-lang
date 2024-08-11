@@ -19,7 +19,7 @@ typedef struct {
     } ty;
 
     union {
-        
+        u64 OPCODE_JUMP;
     } payload;
 } Op;
 

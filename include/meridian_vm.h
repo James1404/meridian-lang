@@ -7,6 +7,8 @@
 
 typedef struct {
     enum {
+        VALUE_NULL,
+        
         VALUE_INT,
         VALUE_FLOAT,
         VALUE_BOOLEAN,
@@ -20,12 +22,16 @@ typedef struct {
         bool VALUE_BOOLEAN;
         String VALUE_STRING;
         String VALUE_IDENT;
-        struct { } VALUE_FN;
+        struct { u64 loc; } VALUE_FN;
     } data;
 } Value;
 
+#define VALUE(ty) ((Value){ty, {0}})
+#define VALUE_V(ty, value) ((Value){ty, value})
+#define VALUE_S(ty, ...) ((Value){ty, .ty = (ty){...}})
+
 typedef struct {
-    String id;
+    String name;
     Value value;
     u64 scope;
 } Local;
@@ -55,8 +61,8 @@ void VM_free(VM *vm);
 void VM_inc(VM *vm);
 void VM_dec(VM *vm);
 
-void VM_set(VM* vm, String id, Value value);
-Value VM_get(VM* vm, String id);
+void VM_set(VM* vm, String name, Value value);
+Value VM_get(VM* vm, String name);
 
 void VM_run(VM* vm);
 
