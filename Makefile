@@ -15,7 +15,7 @@ INCLUDE = include\
 
 INCLUDE_DIRS := $(foreach dir,$(INCLUDE),-I$(dir))
 
-CCFLAGS = -Wall -Werror -pedantic -g -O -std=c99\
+CCFLAGS = -Wall -Werror -g -O -std=c99\
 		  $(INCLUDE_DIRS)\
 	      `llvm-config --cflags`
 

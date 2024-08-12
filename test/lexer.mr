@@ -1,1 +1,1 @@
-def hey = let a = 25 in fn x -> x;
+def hey = 25 :: Int;

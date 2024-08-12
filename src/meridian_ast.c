@@ -149,5 +149,16 @@ void ASTList_prettyPrint(ASTList* list, u64 indentation, AST_Idx node) {
         
         printf(";");
         break;
+    case AST_ANNOTATE:
+        printf("(");
+        
+        ASTList_prettyPrint(list, indentation, AST_VALUE(list, node, AST_ANNOTATE).expression);
+        
+        printf(": ");
+        
+        ASTList_prettyPrint(list, indentation, AST_VALUE(list, node, AST_ANNOTATE).type);
+       
+        printf(")");
+        break;
     }
 }

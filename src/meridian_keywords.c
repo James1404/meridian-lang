@@ -37,7 +37,7 @@ struct Keyword {
     const char* name;
     int tt;
 };
-/* maximum key range = 19, duplicates = 0 */
+/* maximum key range = 22, duplicates = 0 */
 
 #ifdef __GNUC__
 __inline
@@ -51,32 +51,32 @@ Meridian_KeywordsHash (register const char *str, register size_t len)
 {
   static unsigned char asso_values[] =
     {
-      20, 20, 20, 20, 20, 20, 20, 20, 20, 20,
-      20, 20, 20, 20, 20, 20, 20, 20, 20, 20,
-      20, 20, 20, 20, 20, 20, 20, 20, 20, 20,
-      20, 20, 20, 20, 20, 20, 20, 20, 20, 20,
-      20, 20, 20, 20, 20,  0, 20, 20, 20, 20,
-      20, 20, 20, 20, 20, 20, 20, 20, 20, 20,
-      20,  0,  0, 20, 20, 20, 20, 20, 20, 20,
-      20, 20, 20, 20, 20, 20, 20, 20, 20, 20,
-      20, 20, 20, 20, 20, 20, 20, 20, 20, 20,
-      20, 20, 20, 20, 20, 20, 20,  0, 20, 20,
-       5,  0, 10, 20, 10,  5, 20, 20,  0,  0,
-       0, 20, 20, 20,  5, 20,  5, 20, 20, 20,
-      20,  0, 20, 20, 20, 20, 20, 20, 20, 20,
-      20, 20, 20, 20, 20, 20, 20, 20, 20, 20,
-      20, 20, 20, 20, 20, 20, 20, 20, 20, 20,
-      20, 20, 20, 20, 20, 20, 20, 20, 20, 20,
-      20, 20, 20, 20, 20, 20, 20, 20, 20, 20,
-      20, 20, 20, 20, 20, 20, 20, 20, 20, 20,
-      20, 20, 20, 20, 20, 20, 20, 20, 20, 20,
-      20, 20, 20, 20, 20, 20, 20, 20, 20, 20,
-      20, 20, 20, 20, 20, 20, 20, 20, 20, 20,
-      20, 20, 20, 20, 20, 20, 20, 20, 20, 20,
-      20, 20, 20, 20, 20, 20, 20, 20, 20, 20,
-      20, 20, 20, 20, 20, 20, 20, 20, 20, 20,
-      20, 20, 20, 20, 20, 20, 20, 20, 20, 20,
-      20, 20, 20, 20, 20, 20
+      23, 23, 23, 23, 23, 23, 23, 23, 23, 23,
+      23, 23, 23, 23, 23, 23, 23, 23, 23, 23,
+      23, 23, 23, 23, 23, 23, 23, 23, 23, 23,
+      23, 23, 23, 23, 23, 23, 23, 23, 23, 23,
+      23, 23, 23, 23, 23, 10, 23, 23, 23, 23,
+      23, 23, 23, 23, 23, 23, 23, 23,  0, 23,
+      23,  5, 10, 23, 23, 23, 23, 23, 23, 23,
+      23, 23, 23, 23, 23, 23, 23, 23, 23, 23,
+      23, 23, 23, 23, 23, 23, 23, 23, 23, 23,
+      23, 23, 23, 23, 23, 23, 23,  0, 23, 23,
+       5,  0, 10, 23, 10,  5, 23, 23,  0,  0,
+       0, 23, 23, 23,  5, 23,  5, 23, 23, 23,
+      23,  0, 23, 23, 23, 23, 23, 23, 23, 23,
+      23, 23, 23, 23, 23, 23, 23, 23, 23, 23,
+      23, 23, 23, 23, 23, 23, 23, 23, 23, 23,
+      23, 23, 23, 23, 23, 23, 23, 23, 23, 23,
+      23, 23, 23, 23, 23, 23, 23, 23, 23, 23,
+      23, 23, 23, 23, 23, 23, 23, 23, 23, 23,
+      23, 23, 23, 23, 23, 23, 23, 23, 23, 23,
+      23, 23, 23, 23, 23, 23, 23, 23, 23, 23,
+      23, 23, 23, 23, 23, 23, 23, 23, 23, 23,
+      23, 23, 23, 23, 23, 23, 23, 23, 23, 23,
+      23, 23, 23, 23, 23, 23, 23, 23, 23, 23,
+      23, 23, 23, 23, 23, 23, 23, 23, 23, 23,
+      23, 23, 23, 23, 23, 23, 23, 23, 23, 23,
+      23, 23, 23, 23, 23, 23
     };
   register unsigned int hval = len;
 
@@ -97,27 +97,28 @@ Meridian_KeywordsLookup (register const char *str, register size_t len)
 {
   enum
     {
-      TOTAL_KEYWORDS = 13,
+      TOTAL_KEYWORDS = 15,
       MIN_WORD_LENGTH = 1,
       MAX_WORD_LENGTH = 5,
       MIN_HASH_VALUE = 1,
-      MAX_HASH_VALUE = 19
+      MAX_HASH_VALUE = 22
     };
 
   static struct Keyword wordlist[] =
     {
       {""},
-#line 30 "src/meridian_keywords.gperf"
-      {"=", TOKEN_ASSIGN},
-#line 29 "src/meridian_keywords.gperf"
-      {"->", TOKEN_ARROW},
+#line 31 "src/meridian_keywords.gperf"
+      {":", TOKEN_COLON},
+#line 32 "src/meridian_keywords.gperf"
+      {"::", TOKEN_ANNOTATE},
 #line 18 "src/meridian_keywords.gperf"
       {"let", TOKEN_LET},
 #line 26 "src/meridian_keywords.gperf"
       {"else", TOKEN_ELSE},
 #line 20 "src/meridian_keywords.gperf"
       {"match", TOKEN_MATCH},
-      {""},
+#line 30 "src/meridian_keywords.gperf"
+      {"=", TOKEN_ASSIGN},
 #line 19 "src/meridian_keywords.gperf"
       {"in", TOKEN_IN},
 #line 28 "src/meridian_keywords.gperf"
@@ -137,7 +138,10 @@ Meridian_KeywordsLookup (register const char *str, register size_t len)
       {"if", TOKEN_IF},
       {""},
 #line 25 "src/meridian_keywords.gperf"
-      {"then", TOKEN_THEN}
+      {"then", TOKEN_THEN},
+      {""}, {""},
+#line 29 "src/meridian_keywords.gperf"
+      {"->", TOKEN_ARROW}
     };
 
   if (len <= MAX_WORD_LENGTH && len >= MIN_WORD_LENGTH)
@@ -154,7 +158,7 @@ Meridian_KeywordsLookup (register const char *str, register size_t len)
     }
   return 0;
 }
-#line 31 "src/meridian_keywords.gperf"
+#line 33 "src/meridian_keywords.gperf"
 
 TokenType Meridian_GetKeyword(String src, Token t) {
     struct Keyword* k = Meridian_KeywordsLookup(src.raw + t.start, t.len);

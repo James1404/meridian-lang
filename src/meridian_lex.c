@@ -36,6 +36,7 @@ static bool IsUniqueCharacter(char c) {
     case '>':
     case '<':
     case '=':
+    case ':':
         return true;
     default: return false;
     }
@@ -89,7 +90,6 @@ void Lexer_run(Lexer *lexer) {
         case ']': Lexer_add_single(lexer, TOKEN_RBRACKET); break;
 
         case ';': Lexer_add_single(lexer, TOKEN_SEMICOLON); break;
-        case ':': Lexer_add_single(lexer, TOKEN_COLON); break;
             
         case '"':
             Lexer_advance(lexer);

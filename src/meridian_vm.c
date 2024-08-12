@@ -30,6 +30,8 @@ void VM_inc(VM *vm) {
     vm->localsScope++;
 }
 void VM_dec(VM *vm) {
+    vm->localsScope--;
+    
     while(vm->locals[vm->localsLen - 1].scope > vm->localsScope) {
         vm->localsLen--;
     }

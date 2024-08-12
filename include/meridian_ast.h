@@ -34,6 +34,8 @@ typedef struct AST {
         
         AST_DEFINE,
         AST_TYPEDEF,
+
+        AST_ANNOTATE,
     } tag;
     union {
         i64 AST_INTEGER;
@@ -84,6 +86,10 @@ typedef struct AST {
             AST_Idx name;
             AST_Idx type;
         } AST_TYPEDEF;
+
+        struct {
+            AST_Idx expression, type;
+        } AST_ANNOTATE;
     } payload;
 } AST;
 

@@ -20,6 +20,7 @@ void Parser_run(Parser* parser);
 
 AST_Idx Parser_Ident(Parser *parser);
 AST_Idx Parser_Value(Parser *parser);
+AST_Idx Parser_Type(Parser *parser);
 AST_Idx Parser_Expression(Parser *parser);
 AST_Idx Parser_Stmt(Parser *parser);
 AST_Idx Parser_Define(Parser *parser);

@@ -28,6 +28,8 @@ type, TOKEN_TYPE
 def, TOKEN_DEF
 ->, TOKEN_ARROW
 =, TOKEN_ASSIGN
+:, TOKEN_COLON
+::, TOKEN_ANNOTATE
 %%
 TokenType Meridian_GetKeyword(String src, Token t) {
     struct Keyword* k = Meridian_KeywordsLookup(src.raw + t.start, t.len);

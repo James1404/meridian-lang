@@ -59,6 +59,15 @@ typedef struct {
     u64 len, allocated, scope;
 } TypeEnv;
 
+TypeEnv TypeEnv_make(void);
+void TypeEnv_free(TypeEnv *env);
+
+void TypeEnv_inc(TypeEnv *env);
+void TypeEnv_dec(TypeEnv* env);
+
+void TypeEnv_set(TypeEnv *env, String name, Type ty);
+Type TypeEnv_get(TypeEnv* env, String name);
+
 typedef struct {
     u64 todo;
 } TypeChecker;

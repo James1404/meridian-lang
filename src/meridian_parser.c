@@ -195,8 +195,24 @@ AST_Idx Parser_If(Parser *parser) {
     return AST_MAKE_S(parser->tree, AST_IF, cond, t, f);
 }
 
+AST_Idx Parser_Type(Parser *parser) {
+    switch(Parser_current(parser).tt) {
+    case TOKEN_IDENT: return Parser_Ident(parser);
+    default:
+        Parser_adv(parser);
+        return AST_MAKE(parser->tree, AST_NULL);
+    }
+}
+
 AST_Idx Parser_Expression(Parser* parser) {
-    return Parser_Value(parser);
+    AST_Idx first = Parser_Value(parser);
+
+    if(Parser_match(parser, TOKEN_ANNOTATE)) {
+        AST_Idx type = Parser_Type(parser);
+        return AST_MAKE_S(parser->tree, AST_ANNOTATE, first, type);
+    }
+
+    return first;
 }
 
 AST_Idx Parser_Abstraction(Parser* parser) {
