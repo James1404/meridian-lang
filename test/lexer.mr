@@ -1,1 +1,2 @@
-def hey = 25 :: Int;
+def number = 25;
+def hey = number :: Int;

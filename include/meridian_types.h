@@ -7,45 +7,30 @@
 
 typedef u64 TypeIdx;
 
-typedef struct {
-    TypeIdx parent;
+typedef enum {
+    TYPE_UNKNOWN,
     
-    enum {
-        TYPE_ID,
+    TYPE_ID,
 
-        TYPE_UNIT,
-        TYPE_INT,
-        TYPE_FLOAT,
-        TYPE_BOOLEAN,
-        TYPE_STRING,
-    } tag;
+    TYPE_UNIT,
+    TYPE_INT,
+    TYPE_FLOAT,
+    TYPE_BOOLEAN,
+    TYPE_STRING,
+} TypeTag;
+
+typedef struct {
+    TypeTag tag;
     union {
         u64 TYPE_ID;
     } payload;
 } Type;
 
-typedef struct {
-    Type* data;
-    u64 len, allocated;
+#define TYPE_MAKE(tag) ((Type){tag, {0}})
+#define TYPE_MAKE_V(tag, value) ((Type){tag, {.tag = value}})
+#define TYPE_MAKE_S(tag, ...) ((Type){tag, {.tag = {__VA_ARGS__}}})
 
-    u64 currentTypeId;
-} TypeList;
-
-TypeList TypeList_fromAST(ASTList *tree, AST_Idx root);
-void TypeList_free(TypeList *list);
-
-TypeIdx TypeList_alloc(TypeList *list, Type t);
-
-#define TYPE_MAKE(list, parent, tag) (TypeLst_alloc(list, (Type){parent,tag, {0}}))
-#define TYPE_MAKE_V(list, parent, tag, value)                                  \
-  (TypeLst_alloc(list, (Type){parent, tag, {.tag = value}}))
-#define TYPE_MAKE_S(list, parent, tag, ...)                                    \
-  (TypeLst_alloc(list, (Type){parent, tag, {.tag = {__VA_ARGS__}}}))
-
-#define TYPE_GET(list, idx) ((list)->data + idx)
-
-#define TYPE_TAG(list, idx) (TYPE_GET(list, idx)->tag)
-#define TYPE_VALUE(list, idx, tag) (TYPE_GET(list, idx)->payload.tag)
+String Type_toString(Type ty);
 
 typedef struct {
     String name;
@@ -68,13 +53,15 @@ void TypeEnv_dec(TypeEnv* env);
 void TypeEnv_set(TypeEnv *env, String name, Type ty);
 Type TypeEnv_get(TypeEnv* env, String name);
 
-typedef struct {
-    u64 todo;
-} TypeChecker;
+Type TypeCheck(TypeEnv* env, ASTList* tree, AST_Idx node, Type expected);
+Type TypeInfer(TypeEnv *env, ASTList *tree, AST_Idx node);
 
-TypeChecker TypeChecker_make(void);
-void TypeChecker_free(TypeChecker *checker);
+Type GetTypeFromAST(TypeEnv *env, ASTList *tree, AST_Idx node);
 
-void TypeChecker_run(TypeChecker* checker);
+void TypeCheckScope(ASTList* tree, AST_Idx node);
+
+Type GetTypeName(String id);
+
+void RunTypeChecker(ASTList* tree, AST_Idx root);
 
 #endif//MERIDIAN_TYPES_H

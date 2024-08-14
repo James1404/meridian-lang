@@ -1,36 +1,22 @@
 #include "meridian_types.h"
 #include "meridian_error.h"
+#include "meridian_string.h"
+
 #include <stdlib.h>
 
-
-TypeList TypeList_fromAST(ASTList *tree, AST_Idx root) {
-    return (TypeList) {
-        .data = NULL,
-        .len = 0,
-        .allocated = 0,
-        .currentTypeId = 0,
-    };
-}
-void TypeList_free(TypeList *list) {
-    free(list->data);
-}
-
-TypeIdx TypeList_alloc(TypeList *list, Type t) {
-    if(!list->data) {
-        list->allocated = 8;
-        list->data = malloc(sizeof(*list->data) * list->allocated);
+String Type_toString(Type ty) {
+    switch(ty.tag) {
+    case TYPE_UNKNOWN: return STR("Unknown");
+    case TYPE_ID: return STR("Id");
+        
+    case TYPE_UNIT: return STR("Unit");
+    case TYPE_INT: return STR("Int");
+    case TYPE_FLOAT: return STR("Float");
+    case TYPE_BOOLEAN: return STR("Bool");
+    case TYPE_STRING: return STR("String");
+        
+    default: return STR("TypeError");
     }
-
-    AST_Idx idx = list->len++;
-
-    if(list->len >= list->allocated) {
-        list->allocated *= 2;
-        list->data = realloc(list->data, sizeof(*list->data) * list->allocated);
-    }
-
-    list->data[idx] = t;
-
-    return idx;
 }
 
 TypeEnv TypeEnv_make(void) {
@@ -81,7 +67,11 @@ void TypeEnv_set(TypeEnv *env, String name, Type ty) {
     
     STR_CPY_ALLOC(local->name, name);
 }
+
 Type TypeEnv_get(TypeEnv* env, String name) {
+    Type ty = GetTypeName(name);
+    if(ty.tag != TYPE_UNKNOWN) return ty;
+    
     for(i64 i = env->len - 1; i >= 0; i--) {
         LocalType entry = env->locals[i];
 
@@ -90,16 +80,74 @@ Type TypeEnv_get(TypeEnv* env, String name) {
         }
     }
 
-    Meridian_error("Could not find symbol in type environment");
+
+
+    Meridian_error("The symbol '%.*s' could not be found in the current scope", name.len, name.raw);
     return (Type) { 0 };
 }
-    
 
-TypeChecker TypeChecker_make(void) {
-    return (TypeChecker) {
-        .todo = 0
-    };
+Type TypeCheck(TypeEnv* env, ASTList* tree, AST_Idx node, Type expected) {
+    Type inferred = TypeInfer(env, tree, node);
+
+    if(inferred.tag != expected.tag) {
+        String inferredstr = Type_toString(inferred);
+        String expectedstr = Type_toString(expected);
+        Meridian_error("Expression of type '%.*s' does not match the annotation '%.*s'", inferredstr.len, inferredstr.raw, expectedstr.len, expectedstr.raw);
+    }
+
+    return inferred;
 }
-void TypeChecker_free(TypeChecker *checker);
 
-void TypeChecker_run(TypeChecker* checker);
+Type TypeInfer(TypeEnv* env, ASTList* tree, AST_Idx node) {
+    switch(AST_TY(tree, node)) {
+    case AST_INTEGER: return TYPE_MAKE(TYPE_INT);
+    case AST_FLOAT: return TYPE_MAKE(TYPE_FLOAT);
+    case AST_BOOLEAN: return TYPE_MAKE(TYPE_BOOLEAN);
+    case AST_STRING: return TYPE_MAKE(TYPE_STRING);
+    case AST_IDENT: {
+        String id = AST_VALUE(tree, node, AST_IDENT);
+        Type t = TypeEnv_get(env, id);
+
+        if(t.tag == TYPE_UNKNOWN) {
+            Meridian_error("Type identifier does not exist '%.*s'", id.len, id.raw);
+        }
+
+        return t;
+    }
+    case AST_ANNOTATE: {
+        Type ty = GetTypeFromAST(env, tree, AST_VALUE(tree, node, AST_ANNOTATE).type);
+
+        return TypeCheck(env, tree, AST_VALUE(tree, node, AST_ANNOTATE).expression, ty);
+    }
+    case AST_SCOPE: {
+        return TypeInfer(env, tree, AST_VALUE(tree, node, AST_SCOPE).start);
+    }
+    case AST_CONS: {
+        TypeInfer(env, tree, AST_VALUE(tree, node, AST_CONS).data);
+        return TypeInfer(env, tree, AST_VALUE(tree, node, AST_CONS).next);
+    }
+    case AST_DEFINE: {
+        Type ty = TypeInfer(env, tree, AST_VALUE(tree, node, AST_DEFINE).body);
+        String id = AST_VALUE(tree, AST_VALUE(tree, node, AST_DEFINE).name, AST_IDENT);
+        TypeEnv_set(env, id, ty);
+        return ty;
+    }
+    default: return TYPE_MAKE(TYPE_UNKNOWN);
+    }
+}
+
+Type GetTypeFromAST(TypeEnv *env, ASTList *tree, AST_Idx node) {
+    switch(AST_TY(tree, node)) {
+    case AST_IDENT:
+        return TypeEnv_get(env, AST_VALUE(tree, node, AST_IDENT));
+    default: return TYPE_MAKE(TYPE_UNKNOWN);
+    }
+}
+
+void RunTypeChecker(ASTList* tree, AST_Idx root) {
+    TypeEnv env = TypeEnv_make();
+
+    TypeInfer(&env, tree, root);
+    
+    TypeEnv_free(&env);
+}

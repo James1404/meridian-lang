@@ -79,12 +79,10 @@ typedef struct AST {
         } AST_IF;
 
         struct {
-            AST_Idx name;
-            AST_Idx body;
+            AST_Idx name, body;
         } AST_DEFINE;
         struct {
-            AST_Idx name;
-            AST_Idx type;
+            AST_Idx name, type;
         } AST_TYPEDEF;
 
         struct {

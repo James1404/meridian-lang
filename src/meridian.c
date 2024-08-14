@@ -5,6 +5,7 @@
 #include "meridian_parser.h"
 #include "meridian_tokens.h"
 #include "meridian_string.h"
+#include "meridian_types.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -29,6 +30,8 @@ void Meridian_run(char *src, u64 len) {
     Parser_run(&parser);
 
     if(Meridian_error_found()) return;
+
+    RunTypeChecker(&initialAST, parser.root);
 
     ASTList_prettyPrint(&initialAST, 0, parser.root);
 

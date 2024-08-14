@@ -1,0 +1,34 @@
+%{
+#include "meridian_types.h"
+%}
+
+%struct-type
+%enum
+%compare-strncmp
+%define lookup-function-name Meridian_TypeNameLookup
+%define hash-function-name Meridian_TypeNameHash
+
+struct TypeName {
+    const char* name;
+    int ty;
+}
+
+%%
+# Meridian reserved keywords
+Int, TYPE_INT
+Float, TYPE_FLOAT
+String, TYPE_STRING
+Bool, TYPE_BOOLEAN
+Unit, TYPE_UNIT
+%%
+Type GetTypeName(String id) {
+    struct TypeName* k = Meridian_TypeNameLookup(id.raw, id.len);
+
+    if(!k) {
+        return TYPE_MAKE(TYPE_UNKNOWN);
+    }
+
+    return TYPE_MAKE((TypeTag)k->ty)
+
+;
+}
