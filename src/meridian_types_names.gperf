@@ -21,14 +21,12 @@ String, TYPE_STRING
 Bool, TYPE_BOOLEAN
 Unit, TYPE_UNIT
 %%
-Type GetTypeName(String id) {
+TypeIdx TypeEnv_GetTypeName(TypeEnv* env, String id) {
     struct TypeName* k = Meridian_TypeNameLookup(id.raw, id.len);
 
     if(!k) {
-        return TYPE_MAKE(TYPE_UNKNOWN);
+        return TYPE_MAKE(env, TYPE_UNKNOWN);
     }
 
-    return TYPE_MAKE((TypeTag)k->ty)
-
-;
+    return TYPE_MAKE(env, (TypeTag)k->ty);
 }

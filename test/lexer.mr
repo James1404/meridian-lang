@@ -1,2 +1,5 @@
 def number = 25;
 def hey = number :: Int;
+
+def double = fn x -> x;
+def a = (double 25) :: String;

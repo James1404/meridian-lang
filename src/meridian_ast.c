@@ -73,10 +73,9 @@ void ASTList_prettyPrint(ASTList* list, u64 indentation, AST_Idx node) {
         break;
 
     case AST_APPLICATION:
-        printf("(");
         ASTList_prettyPrint(list, indentation, AST_VALUE(list, node, AST_APPLICATION).fn);
 
-        printf(" ");
+        printf("(");
         ASTList_prettyPrint(list, indentation, AST_VALUE(list, node, AST_APPLICATION).arg);
         printf(")");
         break;
@@ -154,7 +153,7 @@ void ASTList_prettyPrint(ASTList* list, u64 indentation, AST_Idx node) {
         
         ASTList_prettyPrint(list, indentation, AST_VALUE(list, node, AST_ANNOTATE).expression);
         
-        printf(": ");
+        printf(" :: ");
         
         ASTList_prettyPrint(list, indentation, AST_VALUE(list, node, AST_ANNOTATE).type);
        

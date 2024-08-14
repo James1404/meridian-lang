@@ -141,7 +141,6 @@ AST_Idx Parser_Value(Parser *parser) {
     }
         
     default: {
-        Meridian_error("Invalid token for value");
         return AST_MAKE(parser->tree, AST_NULL);
     }
     }
@@ -210,6 +209,12 @@ AST_Idx Parser_Expression(Parser* parser) {
     if(Parser_match(parser, TOKEN_ANNOTATE)) {
         AST_Idx type = Parser_Type(parser);
         return AST_MAKE_S(parser->tree, AST_ANNOTATE, first, type);
+    }
+
+    AST_Idx arg = Parser_Value(parser);
+
+    if(AST_TY(parser->tree, arg) != AST_NULL) {
+        return AST_MAKE_S(parser->tree, AST_APPLICATION, first, arg);
     }
 
     return first;
