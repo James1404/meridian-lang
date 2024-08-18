@@ -53,16 +53,18 @@ void* Arena_alloc(Arena* arena, usize size) {
 }
 
 String Arena_fmt(Arena* arena, const char* fmt, ...) {
-    va_list args;
+    va_list args, args2;
     va_start(args, fmt);
+    va_copy(args2, args);
 
     u64 len = vsnprintf(NULL, 0, fmt, args);
 
     char* buffer = Arena_alloc(arena, len + 1);
 
-    sprintf(buffer, fmt, args);
+    vsnprintf(buffer, len + 1, fmt, args2);
 
     va_end(args);
+    va_end(args2);
 
     return (String) { buffer, len };
 }

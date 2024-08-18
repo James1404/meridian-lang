@@ -14,7 +14,9 @@ void Meridian_init(void) {}
 
 void Meridian_free(void) {}
 
-void Meridian_builtin(void) {}
+void Meridian_builtin(void) {
+    
+}
 
 void Meridian_run(char *src, u64 len) {
     TokenList tokens = TokenList_make((String) { src, len });

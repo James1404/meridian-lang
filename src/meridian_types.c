@@ -1,7 +1,9 @@
 #include "meridian_types.h"
+#include "meridian_ast.h"
 #include "meridian_error.h"
 #include "meridian_string.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 
 TypeEnv TypeEnv_make(void) {
@@ -15,7 +17,11 @@ TypeEnv TypeEnv_make(void) {
         .typelistLen = 0,
         .typelistAllocated = 8,
 
-        .allocator = Arena_make(),
+        .universalQuantifiers = 0,
+
+        .complete = false,
+
+        .arena = Arena_make(),
     };
 }
 
@@ -23,7 +29,7 @@ void TypeEnv_free(TypeEnv *env) {
     free(env->locals);
     free(env->typelist);
 
-    Arena_free(&env->allocator);
+    Arena_free(&env->arena);
 }
 
 TypeIdx TypeEnv_alloc(TypeEnv* env, Type ty) {
@@ -44,16 +50,78 @@ TypeIdx TypeEnv_alloc(TypeEnv* env, Type ty) {
     return idx;
 }
 
-bool TypeEnv_eq(TypeEnv* env, TypeIdx l, TypeIdx r) {
-    return TYPE_TAG(env, l) == TYPE_TAG(env, r);
+bool TypeEnv_isMonoType(TypeEnv *env, TypeIdx i) {
+    switch(TYPE_TAG(env, i)) {
+    case TYPE_UNIT:
+    case TYPE_INT:
+    case TYPE_FLOAT:
+    case TYPE_BOOLEAN:
+    case TYPE_STRING:
+    case TYPE_FN:
+        return true;
+    default:
+        return false;
+    }
+}
+
+bool TypeEnv_isPolyType(TypeEnv *env, TypeIdx i) {
+    switch(TYPE_TAG(env, i)) {
+    case TYPE_FORALL:
+        return true;
+    default:
+        return TypeEnv_isMonoType(env, i);
+    }
+}
+
+bool IsSubtype(TypeEnv* env, TypeIdx ty1, TypeIdx ty2) {
+#define SAME(tag) (TYPE_TAG(env, ty1) == (tag) && TYPE_TAG(env, ty2) == (tag))
+    if(SAME(TYPE_UNIT)) {
+        return true;
+    }
+
+    if(SAME(TYPE_EXISTS)) {
+        return TYPE_VALUE(env, ty1, TYPE_EXISTS).monotype == TYPE_VALUE(env, ty2, TYPE_EXISTS).monotype;
+    }
+
+    if(SAME(TYPE_FN)) {
+        return 
+            IsSubtype(env, TYPE_VALUE(env, ty1, TYPE_FN).arg, TYPE_VALUE(env, ty2, TYPE_FN).arg) &&
+            IsSubtype(env, TYPE_VALUE(env, ty1, TYPE_FN).body, TYPE_VALUE(env, ty2, TYPE_FN).body);
+    }
+
+    if(TYPE_TAG(env, ty1) == TYPE_EXISTS) {
+        if(!TypeEnv_occursCheck(env, ty1, ty2)) {
+        }
+    }
+#undef SAME
+
+    if(TYPE_TAG(env, ty) == TYPE_EXISTS) {
+        ty = TYPE_MAKE(env, TYPE_FORALL);
+    }
+
+    TypeTag parentTag = TYPE_TAG(env, parent);
+    TypeTag tyTag = TYPE_TAG(env, ty);
+
+    if(parentTag == TYPE_FORALL) return true;
+
+
+    if(parentTag == TYPE_FN) {
+        if(tyTag != TYPE_FN) return false;
+        
+        return
+            IsSubtype(env, TYPE_VALUE(env, ty, TYPE_FN).arg, TYPE_VALUE(env, parent, TYPE_FN).arg) &&
+            IsSubtype(env, TYPE_VALUE(env, ty, TYPE_FN).body, TYPE_VALUE(env, parent, TYPE_FN).body);
+    }
+
+    return parentTag == tyTag;
 }
 
 String TypeEnv_toString(TypeEnv* env, TypeIdx ty) {
     switch(TYPE_TAG(env, ty)) {
+    case TYPE_NOT_FOUND: return STR("Not Found");
+                
     case TYPE_UNKNOWN: return STR("Unknown");
 
-    case TYPE_ID: return STR("Id");
-        
     case TYPE_UNIT: return STR("Unit");
     case TYPE_INT: return STR("Int");
     case TYPE_FLOAT: return STR("Float");
@@ -63,8 +131,11 @@ String TypeEnv_toString(TypeEnv* env, TypeIdx ty) {
     case TYPE_FN: {
         String arg = TypeEnv_toString(env, TYPE_VALUE(env, ty, TYPE_FN).arg);
         String body = TypeEnv_toString(env, TYPE_VALUE(env, ty, TYPE_FN).body);
-        return Arena_fmt(&env->allocator, "%.*s -> %.*s", arg, body);
+        return Arena_fmt(&env->arena, "%.*s -> %.*s", arg.len, arg.raw, body.len, body.raw);
     }
+
+    case TYPE_FORALL: return STR("forall");
+    case TYPE_EXISTS: return STR("exists");
     }
 
     return STR("TypeError");
@@ -108,9 +179,27 @@ void TypeEnv_set(TypeEnv *env, String name, TypeIdx ty) {
     STR_CPY_ALLOC(local->name, name);
 }
 
+bool TypeEnv_isWellFormed(TypeEnv* env, TypeIdx ty) {
+    switch(TYPE_TAG(env, ty)) {
+    case TYPE_UNIT:
+        return true;
+    case TYPE_FN:
+        return
+            TypeEnv_isWellFormed(env, TYPE_VALUE(env, ty, TYPE_FN).arg) &&
+            TypeEnv_isWellFormed(env, TYPE_VALUE(env, ty, TYPE_FN).body);
+    case TYPE_EXISTS:
+        if(TYPE_VALUE(env, ty, TYPE_EXISTS).solved) {
+        }
+        else {
+        }
+    }
+
+    return false;
+}
+
 TypeIdx TypeEnv_get(TypeEnv* env, String name) {
     TypeIdx ty = TypeEnv_GetTypeName(env, name);
-    if(TYPE_TAG(env, ty) != TYPE_UNKNOWN) return ty;
+    if(TYPE_TAG(env, ty) != TYPE_NOT_FOUND) return ty;
     
     for(i64 i = env->len - 1; i >= 0; i--) {
         LocalType entry = env->locals[i];
@@ -121,19 +210,68 @@ TypeIdx TypeEnv_get(TypeEnv* env, String name) {
     }
 
     Meridian_error("The symbol '%.*s' could not be found in the current scope", name.len, name.raw);
-    return TYPE_MAKE(env, TYPE_UNKNOWN);
+    return TYPE_MAKE(env, TYPE_NOT_FOUND);
 }
 
-TypeIdx TypeCheck(TypeEnv* env, ASTList* tree, AST_Idx node, TypeIdx expected) {
-    TypeIdx inferred = TypeInfer(env, tree, node);
+bool TypeEnv_has(TypeEnv* env, String name) {
+    TypeIdx ty = TypeEnv_GetTypeName(env, name);
+    if(TYPE_TAG(env, ty) != TYPE_NOT_FOUND) return false;
+    
+    for(i64 i = env->len - 1; i >= 0; i--) {
+        LocalType entry = env->locals[i];
 
-    if(!TypeEnv_eq(env, inferred, expected)) {
-        String inferredstr = TypeEnv_toString(env, inferred);
-        String expectedstr = TypeEnv_toString(env, expected);
-        Meridian_error("Expression of type '%.*s' does not match the annotation '%.*s'", inferredstr.len, inferredstr.raw, expectedstr.len, expectedstr.raw);
+        if(STR_CMP(entry.name, name)) {
+            return true;
+        }
     }
 
-    return inferred;
+    return false;
+}
+
+bool TypeEnv_occursCheck(TypeEnv* env, TypeIdx a, TypeIdx against) {
+    return true;
+}
+
+bool TypeCheck(TypeEnv* env, ASTList* tree, AST_Idx node, TypeIdx expected) {
+    switch(AST_TY(tree, node)) {
+    case AST_IDENT: {
+        TypeIdx inferred = TypeInfer(env, tree, node);
+
+        if(TYPE_TAG(env, inferred) == TYPE_EXISTS) {
+            TYPE_VALUE(env, inferred, TYPE_EXISTS).solved = true;
+            TYPE_VALUE(env, inferred, TYPE_EXISTS).monotype = expected;
+        }
+
+        if(!IsSubtype(env, inferred, expected)) {
+            String inferredstr = TypeEnv_toString(env, inferred);
+            String expectedstr = TypeEnv_toString(env, expected);
+            Meridian_error_ast(tree, node, "Identifier's type '%.*s' is not equal to the expected type '%.*s'", inferredstr.len, inferredstr.raw, expectedstr.len, expectedstr.raw);
+
+            return false;
+        }
+        
+        break;
+    }
+    case AST_ANNOTATE: {
+        TypeIdx t = GetTypeFromAST(env, tree, AST_VALUE(tree, node, AST_ANNOTATE).type);
+        TypeCheck(env, tree, AST_VALUE(tree, node, AST_ANNOTATE).expression, t);
+        break;
+    }
+    default: {
+        TypeIdx inferred = TypeInfer(env, tree, node);
+
+        if(!IsSubtype(env, inferred, expected)) {
+            String inferredstr = TypeEnv_toString(env, inferred);
+            String expectedstr = TypeEnv_toString(env, expected);
+            Meridian_error_ast(tree, node, "Expression of type '%.*s' does not match the annotation '%.*s'", inferredstr.len, inferredstr.raw, expectedstr.len, expectedstr.raw);
+
+            return false;
+        }
+        break;
+    }
+    }
+
+    return true;
 }
 
 TypeIdx TypeInfer(TypeEnv* env, ASTList* tree, AST_Idx node) {
@@ -146,15 +284,17 @@ TypeIdx TypeInfer(TypeEnv* env, ASTList* tree, AST_Idx node) {
         String id = AST_VALUE(tree, node, AST_IDENT);
         TypeIdx t = TypeEnv_get(env, id);
 
-        if(TYPE_TAG(env, t) == TYPE_UNKNOWN) {
-            Meridian_error("Type identifier does not exist '%.*s'", id.len, id.raw);
+        if(TYPE_TAG(env, t) == TYPE_NOT_FOUND) {
+            Meridian_error_ast(tree, node, "Type identifier does not exist '%.*s'", id.len, id.raw);
         }
 
         return t;
     }
     case AST_ANNOTATE: {
         TypeIdx ty = GetTypeFromAST(env, tree, AST_VALUE(tree, node, AST_ANNOTATE).type);
-        return TypeCheck(env, tree, AST_VALUE(tree, node, AST_ANNOTATE).expression, ty);
+        TypeCheck(env, tree, AST_VALUE(tree, node, AST_ANNOTATE).expression, ty);
+
+        return ty;
     }
     case AST_SCOPE: {
         return TypeInfer(env, tree, AST_VALUE(tree, node, AST_SCOPE).start);
@@ -163,20 +303,82 @@ TypeIdx TypeInfer(TypeEnv* env, ASTList* tree, AST_Idx node) {
         TypeInfer(env, tree, AST_VALUE(tree, node, AST_CONS).data);
         return TypeInfer(env, tree, AST_VALUE(tree, node, AST_CONS).next);
     }
+    case AST_LET: {
+        TypeEnv_inc(env);
+                
+        TypeIdx letTy = TypeInfer(env, tree, AST_VALUE(tree, node, AST_LET).value);
+
+        TypeEnv_insertAST(env, tree, AST_VALUE(tree, node, AST_LET).name, letTy);
+
+        TypeIdx inTy = TypeInfer(env, tree, AST_VALUE(tree, node, AST_LET).in);
+
+        TypeEnv_dec(env);
+
+        return inTy;
+    }
+    case AST_IF: {
+        TypeCheck(env, tree, AST_VALUE(tree, node, AST_IF).cond, TYPE_MAKE(env, TYPE_BOOLEAN));
+
+        TypeIdx t = TypeInfer(env, tree, AST_VALUE(tree, node, AST_IF).t);
+        TypeIdx f = TypeInfer(env, tree, AST_VALUE(tree, node, AST_IF).f);
+
+        IsSubtype(env, t, f);
+
+        return t;
+    }
+
     case AST_DEFINE: {
         TypeIdx ty = TypeInfer(env, tree, AST_VALUE(tree, node, AST_DEFINE).body);
         String id = AST_VALUE(tree, AST_VALUE(tree, node, AST_DEFINE).name, AST_IDENT);
         TypeEnv_set(env, id, ty);
         return ty;
     }
+    case AST_ABSTRACTION: {
+        TypeIdx arg = TYPE_MAKE_S(env, TYPE_EXISTS, false, 0);
+        TypeEnv_insertAST(env, tree, AST_VALUE(tree, node, AST_ABSTRACTION).arg, arg);
+
+        TypeIdx body = TYPE_MAKE_S(env, TYPE_EXISTS, false, 0);
+        TypeCheck(env, tree, AST_VALUE(tree, node, AST_ABSTRACTION).body, body);
+
+        return TYPE_MAKE_S(env, TYPE_FN, arg, body);
+        
+    }
+    case AST_APPLICATION: {
+        TypeIdx lambda = TypeInfer(env, tree, AST_VALUE(tree, node, AST_APPLICATION).fn);
+
+        if(TYPE_TAG(env, lambda) != TYPE_FN) {
+            String lambdaStr = TypeEnv_toString(env, lambda);
+            Meridian_error_ast(tree, node, "Cannot apply an expression to type '%.*s'", lambdaStr.len, lambdaStr.raw);
+        }
+
+        TypeCheck(env, tree, AST_VALUE(tree, node, AST_APPLICATION).arg, TYPE_VALUE(env, lambda, TYPE_FN).arg);
+
+        return TYPE_VALUE(env, lambda, TYPE_FN).body;
+    }
     default: return TYPE_MAKE(env, TYPE_UNKNOWN);
     }
+}
+
+void TypeEnv_insertAST(TypeEnv *env, ASTList *tree, AST_Idx node, TypeIdx type) {
+    switch(AST_TY(tree, node)) {
+    case AST_IDENT:
+        TypeEnv_set(env, AST_VALUE(tree, node, AST_IDENT), type);
+        break;
+    default:
+        break;
+    }  
 }
 
 TypeIdx GetTypeFromAST(TypeEnv *env, ASTList *tree, AST_Idx node) {
     switch(AST_TY(tree, node)) {
     case AST_IDENT:
         return TypeEnv_get(env, AST_VALUE(tree, node, AST_IDENT));
+    case AST_APPLICATION_TYPE: {
+        TypeIdx arg = GetTypeFromAST(env, tree, AST_VALUE(tree, node, AST_APPLICATION_TYPE).arg);
+        TypeIdx ret = GetTypeFromAST(env, tree, AST_VALUE(tree, node, AST_APPLICATION_TYPE).fn);
+
+        return TYPE_MAKE_S(env, TYPE_FN, arg, ret);
+    }
     default: return TYPE_MAKE(env, TYPE_UNKNOWN);
     }
 }

@@ -25,7 +25,7 @@ TypeIdx TypeEnv_GetTypeName(TypeEnv* env, String id) {
     struct TypeName* k = Meridian_TypeNameLookup(id.raw, id.len);
 
     if(!k) {
-        return TYPE_MAKE(env, TYPE_UNKNOWN);
+        return TYPE_MAKE(env, TYPE_NOT_FOUND);
     }
 
     return TYPE_MAKE(env, (TypeTag)k->ty);

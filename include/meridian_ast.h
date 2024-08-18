@@ -36,6 +36,8 @@ typedef struct AST {
         AST_TYPEDEF,
 
         AST_ANNOTATE,
+
+        AST_APPLICATION_TYPE,
     } tag;
     union {
         i64 AST_INTEGER;
@@ -88,7 +90,11 @@ typedef struct AST {
         struct {
             AST_Idx expression, type;
         } AST_ANNOTATE;
+
+        struct { AST_Idx fn, arg; } AST_APPLICATION_TYPE;
     } payload;
+
+    Token token;
 } AST;
 
 typedef struct {
@@ -103,11 +109,11 @@ AST_Idx ASTList_alloc(ASTList *list, AST node);
 
 void ASTList_prettyPrint(ASTList* list, u64 indentation, AST_Idx node);
 
-#define AST_MAKE(list, tag) (ASTList_alloc(list, (AST){tag, {0}}))
-#define AST_MAKE_V(list, tag, value)                                           \
-  (ASTList_alloc(list, (AST){tag, {.tag = value}}))
-#define AST_MAKE_S(list, tag, ...)                                             \
-  (ASTList_alloc(list, (AST){tag, {.tag = {__VA_ARGS__}}}))
+#define AST_MAKE(token, list, tag) (ASTList_alloc(list, (AST){tag, {0}, token}))
+#define AST_MAKE_V(token, list, tag, value)                                    \
+  (ASTList_alloc(list, (AST){tag, {.tag = value}, token}))
+#define AST_MAKE_S(token, list, tag, ...)                                      \
+  (ASTList_alloc(list, (AST){tag, {.tag = {__VA_ARGS__}}, token}))
 
 #define AST_GET(list, idx) ((list)->data + idx)
 

@@ -1,4 +1,5 @@
 #include "meridian_error.h"
+#include "meridian_ast.h"
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -15,6 +16,20 @@ void Meridian_error(const char *format, ...) {
 
     vprintf(format, args);
 
+    printf("\n");
+
+    va_end(args);
+}
+
+void Meridian_error_ast(ASTList* list, AST_Idx node, const char *format, ...) {
+    va_list args;
+    va_start(args, format);
+
+    Token t = AST_GET(list, node)->token;
+
+    printf("[%u, %u] Meridian Error :: ", t.line, t.lineOffset);
+
+    vprintf(format, args);
     printf("\n");
 
     va_end(args);

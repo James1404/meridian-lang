@@ -49,7 +49,10 @@ static char Lexer_current(Lexer* lexer) {
     return lexer->src.raw[lexer->current];
 }
 
-static void Lexer_advance(Lexer *lexer) { lexer->current++; }
+static void Lexer_advance(Lexer *lexer) {
+  lexer->current++;
+  lexer->lineOffset++;
+}
 
 static bool Lexer_match(Lexer* lexer, char expected) {
     return Lexer_current(lexer) == expected;
@@ -113,7 +116,7 @@ void Lexer_run(Lexer *lexer) {
             
         case '\n':
             lexer->line++;
-            lexer->lineOffset = 0;
+            lexer->lineOffset = 1;
         case ' ':
         case '\t':
         case '\r':

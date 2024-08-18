@@ -9,26 +9,33 @@
 typedef u64 TypeIdx;
 
 typedef enum {
-    TYPE_UNKNOWN,
-    
-    TYPE_ID,
+  TYPE_NOT_FOUND,
+  TYPE_UNKNOWN,
 
-    TYPE_UNIT,
-    TYPE_INT,
-    TYPE_FLOAT,
-    TYPE_BOOLEAN,
-    TYPE_STRING,
+  TYPE_UNIT,
+  TYPE_INT,
+  TYPE_FLOAT,
+  TYPE_BOOLEAN,
+  TYPE_STRING,
 
-    TYPE_FN
+  TYPE_FN,
+
+  TYPE_EXISTS,
+  TYPE_FORALL,
 } TypeTag;
 
 typedef struct {
     TypeTag tag;
     union {
-        u64 TYPE_ID;
         struct {
             TypeIdx arg, body;
         } TYPE_FN;
+
+        struct {
+            bool solved;
+            TypeIdx monotype;
+        } TYPE_EXISTS;
+        struct {} TYPE_FORALL;
     } payload;
 } Type;
 
@@ -54,13 +61,20 @@ typedef struct {
     Type* typelist;
     u64 typelistLen, typelistAllocated;
 
-    Arena allocator;
+    u64 universalQuantifiers;
+
+    bool complete;
+
+    Arena arena;
 } TypeEnv;
 
 TypeEnv TypeEnv_make(void);
 void TypeEnv_free(TypeEnv *env);
 
 TypeIdx TypeEnv_alloc(TypeEnv* env, Type ty);
+
+bool TypeEnv_isMonoType(TypeEnv *env, TypeIdx i);
+bool TypeEnv_isPolyType(TypeEnv *env, TypeIdx i);
 
 bool TypeEnv_eq(TypeEnv* env, TypeIdx l, TypeIdx r);
 String TypeEnv_toString(TypeEnv* env, TypeIdx ty);
@@ -69,14 +83,20 @@ void TypeEnv_inc(TypeEnv *env);
 void TypeEnv_dec(TypeEnv* env);
 
 void TypeEnv_set(TypeEnv *env, String name, TypeIdx ty);
-TypeIdx TypeEnv_get(TypeEnv* env, String name);
+TypeIdx TypeEnv_get(TypeEnv *env, String name);
+bool TypeEnv_has(TypeEnv* env, String name);
 
-TypeIdx TypeCheck(TypeEnv* env, ASTList* tree, AST_Idx node, TypeIdx expected);
+bool TypeCheck(TypeEnv* env, ASTList* tree, AST_Idx node, TypeIdx expected);
 TypeIdx TypeInfer(TypeEnv *env, ASTList *tree, AST_Idx node);
 
+void TypeEnv_insertAST(TypeEnv* env, ASTList* tree, AST_Idx node, TypeIdx type);
 TypeIdx GetTypeFromAST(TypeEnv *env, ASTList *tree, AST_Idx node);
 
 void TypeCheckScope(ASTList* tree, AST_Idx node);
+
+bool TypeEnv_occursCheck(TypeEnv* env, TypeIdx a, TypeIdx against);
+
+TypeIdx TypeEnv_instantiateL(TypeEnv* env);
 
 TypeIdx TypeEnv_GetTypeName(TypeEnv* env, String id);
 
