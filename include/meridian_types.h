@@ -96,7 +96,8 @@ void TypeCheckScope(ASTList* tree, AST_Idx node);
 
 bool TypeEnv_occursCheck(TypeEnv* env, TypeIdx a, TypeIdx against);
 
-TypeIdx TypeEnv_instantiateL(TypeEnv* env);
+void TypeEnv_instantiateL(TypeEnv *env0, TypeIdx alpha, TypeIdx mono0);
+void TypeEnv_instantiateR(TypeEnv* env, TypeIdx mono, TypeIdx alpha);
 
 TypeIdx TypeEnv_GetTypeName(TypeEnv* env, String id);
 

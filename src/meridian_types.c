@@ -73,47 +73,37 @@ bool TypeEnv_isPolyType(TypeEnv *env, TypeIdx i) {
     }
 }
 
-bool IsSubtype(TypeEnv* env, TypeIdx ty1, TypeIdx ty2) {
-#define SAME(tag) (TYPE_TAG(env, ty1) == (tag) && TYPE_TAG(env, ty2) == (tag))
+bool IsSubtype(TypeEnv* env, TypeIdx lhs, TypeIdx rhs) {
+#define SAME(tag) (TYPE_TAG(env, lhs) == (tag) && TYPE_TAG(env, rhs) == (tag))
     if(SAME(TYPE_UNIT)) {
         return true;
     }
 
     if(SAME(TYPE_EXISTS)) {
-        return TYPE_VALUE(env, ty1, TYPE_EXISTS).monotype == TYPE_VALUE(env, ty2, TYPE_EXISTS).monotype;
+        return TYPE_VALUE(env, lhs, TYPE_EXISTS).monotype == TYPE_VALUE(env, rhs, TYPE_EXISTS).monotype;
     }
 
     if(SAME(TYPE_FN)) {
         return 
-            IsSubtype(env, TYPE_VALUE(env, ty1, TYPE_FN).arg, TYPE_VALUE(env, ty2, TYPE_FN).arg) &&
-            IsSubtype(env, TYPE_VALUE(env, ty1, TYPE_FN).body, TYPE_VALUE(env, ty2, TYPE_FN).body);
+            IsSubtype(env, TYPE_VALUE(env, lhs, TYPE_FN).arg, TYPE_VALUE(env, rhs, TYPE_FN).arg) &&
+            IsSubtype(env, TYPE_VALUE(env, lhs, TYPE_FN).body, TYPE_VALUE(env, rhs, TYPE_FN).body);
     }
 
-    if(TYPE_TAG(env, ty1) == TYPE_EXISTS) {
-        if(!TypeEnv_occursCheck(env, ty1, ty2)) {
+    if(TYPE_TAG(env, lhs) == TYPE_EXISTS) {
+        if(!TypeEnv_occursCheck(env, lhs, rhs)) {
+            TypeEnv_instantiateL(env, lhs, rhs);
         }
     }
+
+    
+    if(TYPE_TAG(env, rhs) == TYPE_EXISTS) {
+        if(!TypeEnv_occursCheck(env, lhs, rhs)) {
+            TypeEnv_instantiateR(env, lhs, rhs);
+        }
+    }
+
+    return false;
 #undef SAME
-
-    if(TYPE_TAG(env, ty) == TYPE_EXISTS) {
-        ty = TYPE_MAKE(env, TYPE_FORALL);
-    }
-
-    TypeTag parentTag = TYPE_TAG(env, parent);
-    TypeTag tyTag = TYPE_TAG(env, ty);
-
-    if(parentTag == TYPE_FORALL) return true;
-
-
-    if(parentTag == TYPE_FN) {
-        if(tyTag != TYPE_FN) return false;
-        
-        return
-            IsSubtype(env, TYPE_VALUE(env, ty, TYPE_FN).arg, TYPE_VALUE(env, parent, TYPE_FN).arg) &&
-            IsSubtype(env, TYPE_VALUE(env, ty, TYPE_FN).body, TYPE_VALUE(env, parent, TYPE_FN).body);
-    }
-
-    return parentTag == tyTag;
 }
 
 String TypeEnv_toString(TypeEnv* env, TypeIdx ty) {
@@ -230,6 +220,75 @@ bool TypeEnv_has(TypeEnv* env, String name) {
 
 bool TypeEnv_occursCheck(TypeEnv* env, TypeIdx a, TypeIdx against) {
     return true;
+}
+
+void TypeEnv_instantiateL(TypeEnv *env, TypeIdx alpha, TypeIdx mono) {
+    // InstLSolve
+    if(TypeEnv_isMonoType(env, mono) && TypeEnv_isWellFormed(env, mono)) {
+        TYPE_VALUE(env, alpha, TYPE_EXISTS).monotype = mono;
+        TYPE_VALUE(env, alpha, TYPE_EXISTS).solved = true;
+        return;
+    }
+    //InstLArr
+    if(TYPE_TAG(env, mono) == TYPE_FN) {
+        TypeIdx ex1 = TYPE_MAKE_S(env, TYPE_EXISTS, 0, false);
+        TypeIdx ex2 = TYPE_MAKE_S(env, TYPE_EXISTS, 0, false);
+
+        TypeEnv_instantiateR(env, ex1, TYPE_VALUE(env, mono, TYPE_FN).arg);
+        TypeEnv_instantiateL(env, ex2, TYPE_VALUE(env, mono, TYPE_FN).body);
+
+        return;
+    }
+
+    //InstLALLR
+    if(TYPE_TAG(env, mono) == TYPE_FORALL) {
+        TYPE_VALUE(env, alpha, TYPE_EXISTS).monotype = mono;
+        TYPE_VALUE(env, alpha, TYPE_EXISTS).solved = true;
+        return;
+    }
+    
+    //InstLReach
+    if(TYPE_TAG(env, mono) == TYPE_EXISTS) {
+        TYPE_VALUE(env, alpha, TYPE_EXISTS).monotype = mono;
+        TYPE_VALUE(env, alpha, TYPE_EXISTS).solved = true;
+        return;
+    }
+}
+
+void TypeEnv_instantiateR(TypeEnv *env, TypeIdx mono, TypeIdx alpha) {
+    // InstRSolve
+    if(TypeEnv_isMonoType(env, mono) && TypeEnv_isWellFormed(env, mono)) {
+        TYPE_VALUE(env, alpha, TYPE_EXISTS).monotype = mono;
+        TYPE_VALUE(env, alpha, TYPE_EXISTS).solved = true;
+        return;
+    }
+    
+    //InsRLArr
+    if(TYPE_TAG(env, mono) == TYPE_FN) {
+        TypeIdx ex1 = TYPE_MAKE_S(env, TYPE_EXISTS, 0, false);
+        TypeIdx ex2 = TYPE_MAKE_S(env, TYPE_EXISTS, 0, false);
+
+        TypeEnv_instantiateL(env, ex1, TYPE_VALUE(env, mono, TYPE_FN).arg);
+        TypeEnv_instantiateR(env, ex2, TYPE_VALUE(env, mono, TYPE_FN).body);
+
+        return;
+    }
+    
+    //InstRALLR
+    if(TYPE_TAG(env, mono) == TYPE_FORALL) {
+        TypeIdx ex = TYPE_MAKE_S(env, TYPE_EXISTS, 0, false);
+        
+        TYPE_VALUE(env, alpha, TYPE_EXISTS).monotype = mono;
+        TYPE_VALUE(env, alpha, TYPE_EXISTS).solved = true;
+        return;
+    }
+    
+    //InstRReach
+    if(TYPE_TAG(env, mono) == TYPE_EXISTS) {
+        TYPE_VALUE(env, alpha, TYPE_EXISTS).monotype = mono;
+        TYPE_VALUE(env, alpha, TYPE_EXISTS).solved = true;
+        return;
+    }
 }
 
 bool TypeCheck(TypeEnv* env, ASTList* tree, AST_Idx node, TypeIdx expected) {

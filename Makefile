@@ -15,11 +15,11 @@ INCLUDE = include\
 
 INCLUDE_DIRS := $(foreach dir,$(INCLUDE),-I$(dir))
 
-CCFLAGS = -Wall -g -O0 -std=c99\
+CCFLAGS = -Wall -g -O -std=c99\
 		  $(INCLUDE_DIRS)\
 	      `llvm-config --cflags`
 
-CPPFLAGS = -Wall -Werror -pedantic -g -O -std=c++20 $(INCLUDE_DIRS)
+CPPFLAGS = -Wall -Werror -g -O -std=c++20 $(INCLUDE_DIRS)
 
 LDFLAGS =\
 	      `llvm-config --libs`
@@ -51,7 +51,7 @@ $(CACHE_DIR)/%.o: $(SRC_DIR)/%.c | $(CACHE_DIR)
 
 $(CACHE_DIR)/%.o: $(SRC_DIR)/%.cpp | $(CACHE_DIR)
 	@echo Building: $(notdir $<)
-	@$(CPP) $(CPPFLAGS) -MM -MF $(putsubst %.o,%.d,$@) -c $< -o $@
+	@$(CPP) $(CPPFLAGS) -MMD -MP -c $< -o $@
 
 $(SRC_DIR)/%.c: $(SRC_DIR)/%.gperf
 	gperf $< > $@
