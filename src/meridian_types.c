@@ -80,7 +80,7 @@ bool IsSubtype(TypeEnv* env, TypeIdx lhs, TypeIdx rhs) {
     }
 
     if(SAME(TYPE_EXISTS)) {
-        return TYPE_VALUE(env, lhs, TYPE_EXISTS).monotype == TYPE_VALUE(env, rhs, TYPE_EXISTS).monotype;
+        return true;
     }
 
     if(SAME(TYPE_FN)) {
@@ -91,18 +91,19 @@ bool IsSubtype(TypeEnv* env, TypeIdx lhs, TypeIdx rhs) {
 
     if(TYPE_TAG(env, lhs) == TYPE_EXISTS) {
         if(!TypeEnv_occursCheck(env, lhs, rhs)) {
-            TypeEnv_instantiateL(env, lhs, rhs);
+            TYPE_SET(env, lhs, TypeEnv_instantiateL(env, rhs));
+            return IsSubtype(env, lhs, rhs);
         }
     }
 
-    
     if(TYPE_TAG(env, rhs) == TYPE_EXISTS) {
         if(!TypeEnv_occursCheck(env, lhs, rhs)) {
-            TypeEnv_instantiateR(env, lhs, rhs);
+            TYPE_SET(env, rhs, TypeEnv_instantiateR(env, lhs));
+            return IsSubtype(env, lhs, rhs);
         }
     }
 
-    return false;
+    return TYPE_TAG(env, lhs) == TYPE_TAG(env, rhs);
 #undef SAME
 }
 
@@ -171,20 +172,13 @@ void TypeEnv_set(TypeEnv *env, String name, TypeIdx ty) {
 
 bool TypeEnv_isWellFormed(TypeEnv* env, TypeIdx ty) {
     switch(TYPE_TAG(env, ty)) {
-    case TYPE_UNIT:
-        return true;
     case TYPE_FN:
         return
             TypeEnv_isWellFormed(env, TYPE_VALUE(env, ty, TYPE_FN).arg) &&
             TypeEnv_isWellFormed(env, TYPE_VALUE(env, ty, TYPE_FN).body);
-    case TYPE_EXISTS:
-        if(TYPE_VALUE(env, ty, TYPE_EXISTS).solved) {
-        }
-        else {
-        }
+    default:
+        return true;
     }
-
-    return false;
 }
 
 TypeIdx TypeEnv_get(TypeEnv* env, String name) {
@@ -219,87 +213,72 @@ bool TypeEnv_has(TypeEnv* env, String name) {
 }
 
 bool TypeEnv_occursCheck(TypeEnv* env, TypeIdx a, TypeIdx against) {
-    return true;
+    return false;
 }
 
-void TypeEnv_instantiateL(TypeEnv *env, TypeIdx alpha, TypeIdx mono) {
+TypeIdx TypeEnv_instantiateL(TypeEnv *env, TypeIdx mono) {
     // InstLSolve
     if(TypeEnv_isMonoType(env, mono) && TypeEnv_isWellFormed(env, mono)) {
-        TYPE_VALUE(env, alpha, TYPE_EXISTS).monotype = mono;
-        TYPE_VALUE(env, alpha, TYPE_EXISTS).solved = true;
-        return;
+        return mono;
     }
     //InstLArr
     if(TYPE_TAG(env, mono) == TYPE_FN) {
-        TypeIdx ex1 = TYPE_MAKE_S(env, TYPE_EXISTS, 0, false);
-        TypeIdx ex2 = TYPE_MAKE_S(env, TYPE_EXISTS, 0, false);
+        TypeIdx ex1 = TYPE_MAKE(env, TYPE_EXISTS);
+        TypeIdx ex2 = TYPE_MAKE(env, TYPE_EXISTS);
 
-        TypeEnv_instantiateR(env, ex1, TYPE_VALUE(env, mono, TYPE_FN).arg);
-        TypeEnv_instantiateL(env, ex2, TYPE_VALUE(env, mono, TYPE_FN).body);
+        ex1 = TypeEnv_instantiateR(env, TYPE_VALUE(env, mono, TYPE_FN).arg);
+        ex2 = TypeEnv_instantiateL(env, TYPE_VALUE(env, mono, TYPE_FN).body);
 
-        return;
+        return TYPE_MAKE_S(env, TYPE_FN, ex1, ex2);
     }
 
     //InstLALLR
     if(TYPE_TAG(env, mono) == TYPE_FORALL) {
-        TYPE_VALUE(env, alpha, TYPE_EXISTS).monotype = mono;
-        TYPE_VALUE(env, alpha, TYPE_EXISTS).solved = true;
-        return;
+        return mono;
     }
     
     //InstLReach
     if(TYPE_TAG(env, mono) == TYPE_EXISTS) {
-        TYPE_VALUE(env, alpha, TYPE_EXISTS).monotype = mono;
-        TYPE_VALUE(env, alpha, TYPE_EXISTS).solved = true;
-        return;
+        return mono;
     }
+
+    return TYPE_MAKE(env, TYPE_EXISTS);
 }
 
-void TypeEnv_instantiateR(TypeEnv *env, TypeIdx mono, TypeIdx alpha) {
+TypeIdx TypeEnv_instantiateR(TypeEnv *env, TypeIdx mono) {
     // InstRSolve
     if(TypeEnv_isMonoType(env, mono) && TypeEnv_isWellFormed(env, mono)) {
-        TYPE_VALUE(env, alpha, TYPE_EXISTS).monotype = mono;
-        TYPE_VALUE(env, alpha, TYPE_EXISTS).solved = true;
-        return;
+        return mono;
     }
     
     //InsRLArr
     if(TYPE_TAG(env, mono) == TYPE_FN) {
-        TypeIdx ex1 = TYPE_MAKE_S(env, TYPE_EXISTS, 0, false);
-        TypeIdx ex2 = TYPE_MAKE_S(env, TYPE_EXISTS, 0, false);
+        TypeIdx ex1 = TYPE_MAKE(env, TYPE_EXISTS);
+        TypeIdx ex2 = TYPE_MAKE(env, TYPE_EXISTS);
 
-        TypeEnv_instantiateL(env, ex1, TYPE_VALUE(env, mono, TYPE_FN).arg);
-        TypeEnv_instantiateR(env, ex2, TYPE_VALUE(env, mono, TYPE_FN).body);
+        ex1 = TypeEnv_instantiateL(env, TYPE_VALUE(env, mono, TYPE_FN).arg);
+        ex2 = TypeEnv_instantiateR(env, TYPE_VALUE(env, mono, TYPE_FN).body);
 
-        return;
+        return TYPE_MAKE_S(env, TYPE_FN, ex1, ex2);
     }
     
     //InstRALLR
     if(TYPE_TAG(env, mono) == TYPE_FORALL) {
-        TypeIdx ex = TYPE_MAKE_S(env, TYPE_EXISTS, 0, false);
-        
-        TYPE_VALUE(env, alpha, TYPE_EXISTS).monotype = mono;
-        TYPE_VALUE(env, alpha, TYPE_EXISTS).solved = true;
-        return;
+        return mono;
     }
     
     //InstRReach
     if(TYPE_TAG(env, mono) == TYPE_EXISTS) {
-        TYPE_VALUE(env, alpha, TYPE_EXISTS).monotype = mono;
-        TYPE_VALUE(env, alpha, TYPE_EXISTS).solved = true;
-        return;
+        return mono;
     }
+
+    return TYPE_MAKE(env, TYPE_EXISTS);
 }
 
 bool TypeCheck(TypeEnv* env, ASTList* tree, AST_Idx node, TypeIdx expected) {
     switch(AST_TY(tree, node)) {
     case AST_IDENT: {
         TypeIdx inferred = TypeInfer(env, tree, node);
-
-        if(TYPE_TAG(env, inferred) == TYPE_EXISTS) {
-            TYPE_VALUE(env, inferred, TYPE_EXISTS).solved = true;
-            TYPE_VALUE(env, inferred, TYPE_EXISTS).monotype = expected;
-        }
 
         if(!IsSubtype(env, inferred, expected)) {
             String inferredstr = TypeEnv_toString(env, inferred);
@@ -393,14 +372,12 @@ TypeIdx TypeInfer(TypeEnv* env, ASTList* tree, AST_Idx node) {
         return ty;
     }
     case AST_ABSTRACTION: {
-        TypeIdx arg = TYPE_MAKE_S(env, TYPE_EXISTS, false, 0);
+        TypeIdx arg = TYPE_MAKE(env, TYPE_EXISTS);
         TypeEnv_insertAST(env, tree, AST_VALUE(tree, node, AST_ABSTRACTION).arg, arg);
 
-        TypeIdx body = TYPE_MAKE_S(env, TYPE_EXISTS, false, 0);
-        TypeCheck(env, tree, AST_VALUE(tree, node, AST_ABSTRACTION).body, body);
-
-        return TYPE_MAKE_S(env, TYPE_FN, arg, body);
         
+        TypeIdx body = TypeInfer(env, tree, AST_VALUE(tree, node, AST_ABSTRACTION).body);
+        return TYPE_MAKE_S(env, TYPE_FN, arg, body);
     }
     case AST_APPLICATION: {
         TypeIdx lambda = TypeInfer(env, tree, AST_VALUE(tree, node, AST_APPLICATION).fn);
