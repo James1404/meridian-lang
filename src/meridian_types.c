@@ -283,7 +283,7 @@ bool TypeCheck(TypeEnv* env, ASTList* tree, AST_Idx node, TypeIdx expected) {
         if(!IsSubtype(env, inferred, expected)) {
             String inferredstr = TypeEnv_toString(env, inferred);
             String expectedstr = TypeEnv_toString(env, expected);
-            Meridian_error_ast(tree, node, "Identifier's type '%.*s' is not equal to the expected type '%.*s'", inferredstr.len, inferredstr.raw, expectedstr.len, expectedstr.raw);
+            Meridian_error_ast(tree, node, "Expected type of '%.*s', but got '%.*s'", expectedstr.len, expectedstr.raw, inferredstr.len, inferredstr.raw);
 
             return false;
         }

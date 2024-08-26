@@ -1,2 +1,3 @@
 def double = fn x -> x;
-def g = double :: Int -> Float;
+def g = double 2;
+def p = g :: Float;
