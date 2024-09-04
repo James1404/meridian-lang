@@ -2,12 +2,12 @@
 #define MERIDIAN_H
 
 #include "meridian_common.h"
+#include "meridian_string.h"
 
-void Meridian_init(void);
-void Meridian_free(void);
-void Meridian_builtin(void);
+#define MAJOR_VERSION 0
+#define MINOR_VERSION 01
 
-void Meridian_run(char *src, u64 len);
-void Meridian_run_file(const char* filepath);
+void Meridian_run(String src);
+void Meridian_run_file(String filepath);
 
 #endif//MERIDIAN_H

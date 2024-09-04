@@ -45,7 +45,7 @@ void* Arena_alloc(Arena* arena, usize size) {
         page = page->next;
     }
 
-    void* ptr = page->mem + page->used;
+    u8* ptr = page->mem + page->used;
 
     page->used += size;
     

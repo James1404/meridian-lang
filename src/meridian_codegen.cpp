@@ -14,7 +14,7 @@
 #include <llvm/IR/Verifier.h>
 
 Codegen Codegen_init(ASTList *list, AST_Idx root) {
-    return (Codegen) { list, root };
+    return { list, root };
 }
 
 void Codegen_free(Codegen *gen) {}

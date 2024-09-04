@@ -11,18 +11,17 @@
       (system:
         let pkgs = import nixpkgs { inherit system; }; in
         {
-          devShells.default = pkgs.mkShell {
+          devShells.default = (pkgs.mkShell.override { stdenv = pkgs.clangStdenv; } {
             packages = with pkgs; [
               pkg-config
 	            bear
-	            gdb
+              lldb
               gperf
               clang-tools
               llvm_18
-              pandoc
               valgrind
             ];
-          };
+          });
         }
       );
 }

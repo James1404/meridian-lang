@@ -68,3 +68,5 @@ build/
 
 .direnv/
 .envrc
+
+valgrind-out.txt

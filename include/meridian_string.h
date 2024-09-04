@@ -13,11 +13,11 @@
     dst = STR_ALLOC((src).len);                                                \
     strncpy((dst).raw, (src).raw, (src).len);                                  \
   } while (0)
-#define STR_CPY_ALLOC_NULL(dst, src)                                                \
+#define STR_CPY_ALLOC_NULL(dst, src)                                           \
   do {                                                                         \
-    dst = STR_ALLOC((src).len + 1);                                                \
+    dst = STR_ALLOC((src).len + 1);                                            \
     strncpy((dst).raw, (src).raw, (src).len);                                  \
-    dst.raw[(src).len] = '\0';\
+    dst.raw[(src).len] = '\0';                                                 \
   } while (0)
 
 #define STR_FREE(str)                                                          \
@@ -32,5 +32,10 @@ typedef struct {
 } String;
 
 #define STR_CMP(lhs, rhs) (strncmp((lhs).raw, (rhs).raw, (lhs).len) == 0)
+#define STR_CMP_WITH_RAW(lhs, rhs) (strncmp((lhs).raw, (rhs), strlen(rhs)) == 0)
+#define STR_CMP_RAWS(lhs, rhs) (strcmp((lhs), (rhs)) == 0)
+
+#define STR_IDX(src, i) ((src).raw[i])
+#define STR_SUBSTR(src, start, len) ((String){(src).raw + start, len})
 
 #endif// MERIDIAN_STRING_H

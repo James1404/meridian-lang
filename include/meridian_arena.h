@@ -5,7 +5,7 @@
 #include "meridian_string.h"
 
 typedef struct ArenaPage {
-    void* mem;
+    u8* mem;
     usize used;
 
     struct ArenaPage* next;

@@ -10,16 +10,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void Meridian_init(void) {}
-
-void Meridian_free(void) {}
-
-void Meridian_builtin(void) {
-    
-}
-
-void Meridian_run(char *src, u64 len) {
-    TokenList tokens = TokenList_make((String) { src, len });
+void Meridian_run(String src) {
+    TokenList tokens = TokenList_make(src);
     
     Lexer lexer = Lexer_new(&tokens);
     Lexer_run(&lexer);
@@ -43,11 +35,14 @@ void Meridian_run(char *src, u64 len) {
     TokenList_free(&tokens);
 }
 
-void Meridian_run_file(const char *filepath) {
-    FILE* file = fopen(filepath, "r");
+void Meridian_run_file(String filepath) {
+    String nullterminated;
+    STR_CPY_ALLOC_NULL(nullterminated, filepath);
+    
+    FILE* file = fopen(nullterminated.raw, "r");
 
     if(!file) {
-        Meridian_error("Couldnt not find file");
+        Meridian_error("Could not find file '%.*s'", filepath.len, filepath.raw);
         return;
     }
 
@@ -58,10 +53,10 @@ void Meridian_run_file(const char *filepath) {
     char* buffer = malloc(len);
 
     if(fread(buffer, 1, len, file) != len) {
-        Meridian_error("Meridian_run_file :: fread failed");
+        Meridian_error("Failed to read file '%.*s'", filepath.len, filepath.raw);
         return;
     }
     fclose(file);
 
-    Meridian_run(buffer, len); 
+    Meridian_run((String) { buffer, len });
 }
