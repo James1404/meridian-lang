@@ -4,6 +4,12 @@
 #include "meridian_common.h"
 #include "meridian_string.h"
 
+typedef struct {
+    void* (*alloc)(usize);
+    void (*free)(void*);
+    void* ptr;
+} AllocatorVTable;
+
 typedef struct ArenaPage {
     u8* mem;
     usize used;
@@ -11,7 +17,7 @@ typedef struct ArenaPage {
     struct ArenaPage* next;
 } ArenaPage;
 
-#define PAGE_SIZE (sizeof(u64) * 100)
+#define PAGE_SIZE (sizeof(u64) * 1000)
 
 typedef struct {
     ArenaPage* start, *end;

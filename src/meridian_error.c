@@ -21,11 +21,11 @@ void Meridian_error(const char *format, ...) {
     va_end(args);
 }
 
-void Meridian_error_ast(ASTList* list, AST_Idx node, const char *format, ...) {
+void Meridian_error_ast(NodeList* list, NodeIndex node, const char *format, ...) {
     va_list args;
     va_start(args, format);
 
-    Token t = AST_GET(list, node)->token;
+    Token t = NODE_GET(list, node)->token;
 
     printf("[%u, %u] Meridian Error :: ", t.line, t.lineOffset);
 

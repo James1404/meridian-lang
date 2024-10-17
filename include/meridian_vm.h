@@ -9,12 +9,12 @@ typedef struct {
     String name;
     Value value;
     u64 scope;
-} Local;
+} VMLocal;
 
 typedef struct {
-    Local* locals;
+    VMLocal* locals;
     u64 len, allocated, scope;
-} Env;
+} VMEnv;
 
 typedef struct {
     u64 pc;
@@ -24,7 +24,7 @@ typedef struct {
     Value* stack;
     u64 stackTop, stackAllocated;
 
-    Local* locals;
+    VMLocal* locals;
     u64 localsLen, localsAllocated;
     u64 localsScope;
 } VM;

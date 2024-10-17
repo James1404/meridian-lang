@@ -7,30 +7,30 @@
 typedef struct {
     u64 current;
 
-    ASTList* tree;
-    AST_Idx root;
+    NodeList* tree;
+    NodeIndex root;
 
     TokenList* tokens;
 } Parser;
 
-Parser Parser_make(TokenList* in, ASTList* out);
+Parser Parser_make(TokenList* in, NodeList* out);
 void Parser_free(Parser *parser);
 
 void Parser_run(Parser* parser);
 
-AST_Idx Parser_Ident(Parser *parser);
-AST_Idx Parser_Value(Parser *parser);
-AST_Idx Parser_Type(Parser *parser);
-AST_Idx Parser_Expression(Parser *parser);
-AST_Idx Parser_Stmt(Parser *parser);
-AST_Idx Parser_Define(Parser *parser);
-AST_Idx Parser_TypeDef(Parser *parser);
-AST_Idx Parser_Let(Parser *parser);
-AST_Idx Parser_If(Parser *parser);
+NodeIndex Parser_Ident(Parser *parser);
+NodeIndex Parser_Value(Parser *parser);
+NodeIndex Parser_Type(Parser *parser);
+NodeIndex Parser_Expression(Parser *parser);
+NodeIndex Parser_Stmt(Parser *parser);
+NodeIndex Parser_Define(Parser *parser);
+NodeIndex Parser_TypeDef(Parser *parser);
+NodeIndex Parser_Let(Parser *parser);
+NodeIndex Parser_If(Parser *parser);
 
-AST_Idx Parser_Abstraction(Parser *parser);
+NodeIndex Parser_Abstraction(Parser *parser);
 
-AST_Idx Parser_Scope(Parser *parser);
-AST_Idx Parser_TopLevelScope(Parser *parser);
+NodeIndex Parser_Scope(Parser *parser);
+NodeIndex Parser_TopLevelScope(Parser *parser);
 
 #endif//MERIDIAN_PARSER_H

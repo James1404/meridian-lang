@@ -47,7 +47,7 @@ void VM_set(VM* vm, String name, Value value) {
     if(vm->localsLen >= vm->localsAllocated) {
         vm->localsAllocated *= 2;
 
-        Local* temp = realloc(vm->locals, sizeof(Local) * vm->localsAllocated);
+        VMLocal* temp = realloc(vm->locals, sizeof(VMLocal) * vm->localsAllocated);
         if(temp) {
             vm->locals = temp;
         }
@@ -57,8 +57,8 @@ void VM_set(VM* vm, String name, Value value) {
         }
     }
 
-    Local* local = vm->locals + (vm->localsLen++);
-    *local = (Local) {
+    VMLocal* local = vm->locals + (vm->localsLen++);
+    *local = (VMLocal) {
         .scope = vm->localsScope,
         .value = value,
     };
@@ -68,7 +68,7 @@ void VM_set(VM* vm, String name, Value value) {
 
 Value VM_get(VM* vm, String name) {
     for(i64 i = vm->localsLen - 1; i >= 0; i--) {
-        Local entry = vm->locals[i];
+        VMLocal entry = vm->locals[i];
 
         if(STR_CMP(entry.name, name)) {
             return entry.value;

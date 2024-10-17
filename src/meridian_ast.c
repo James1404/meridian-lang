@@ -1,27 +1,28 @@
 #include "meridian_ast.h"
+#include "meridian_arena.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 
-ASTList ASTList_make(void) {
-    return (ASTList) {
+NodeList NodeList_make(void) {
+    return (NodeList) {
         .data = NULL,
         .len = 0,
         .allocated = 8,
     };  
 }
 
-void ASTList_free(ASTList *list) {
+void NodeList_free(NodeList *list) {
     free(list->data);
 }
 
-AST_Idx ASTList_alloc(ASTList *list, AST node) {
+NodeIndex NodeList_alloc(NodeList *list, Node node) {
     if(!list->data) {
         list->allocated = 8;
         list->data = malloc(sizeof(*list->data) * list->allocated);
     }
 
-    AST_Idx idx = list->len++;
+    NodeIndex idx = list->len++;
 
     if(list->len >= list->allocated) {
         list->allocated *= 2;
@@ -33,138 +34,146 @@ AST_Idx ASTList_alloc(ASTList *list, AST node) {
     return idx;
 }
 
-void ASTList_prettyPrint(ASTList* list, u64 indentation, AST_Idx node) {
-    switch(AST_TY(list, node)) {
-    case AST_NULL:
+static void NodeList_prettyPrintNode(NodeList* list, NodeIndex node) {
+    switch(NODE_TY(list, node)) {
+    case NODE_NULL:
         printf("NULL");
         break;
-    case AST_INTEGER:
-        printf("%ld", AST_VALUE(list, node, AST_INTEGER));
+    case NODE_INTEGER:
+        printf("%ld", NODE_VALUE(list, node, NODE_INTEGER));
         break;
-    case AST_FLOAT:
-        printf("%Lf", AST_VALUE(list, node, AST_FLOAT));
+    case NODE_FLOAT:
+        printf("%Lf", NODE_VALUE(list, node, NODE_FLOAT));
         break;
-    case AST_BOOLEAN:
-        printf("%s", AST_VALUE(list, node, AST_BOOLEAN) ? "true" : "false");
-        break;
-
-    case AST_STRING:
-        printf("\"%.*s\"", AST_VALUE(list, node, AST_STRING).len, AST_VALUE(list, node, AST_STRING).raw);
-        break;
-        
-    case AST_IDENT:
-        printf("%.*s", AST_VALUE(list, node, AST_IDENT).len, AST_VALUE(list, node, AST_IDENT).raw);
-        break;
-        
-    case AST_CONS:
-        ASTList_prettyPrint(list, indentation, AST_VALUE(list, node, AST_CONS).data);
-        ASTList_prettyPrint(list, indentation, AST_VALUE(list, node, AST_CONS).next);
-        break;
-        
-    case AST_LIST:
-        printf("(");
-        ASTList_prettyPrint(list, indentation, AST_VALUE(list, node, AST_LIST).start);
-        printf(")");
-        break;
-    case AST_SCOPE:
-        printf("(");
-        ASTList_prettyPrint(list, indentation, AST_VALUE(list, node, AST_SCOPE).start);
-        printf(")");
+    case NODE_BOOLEAN:
+        printf("%s", NODE_VALUE(list, node, NODE_BOOLEAN) ? "true" : "false");
         break;
 
-    case AST_APPLICATION:
-        ASTList_prettyPrint(list, indentation, AST_VALUE(list, node, AST_APPLICATION).fn);
+    case NODE_STRING:
+        printf("\"%.*s\"", NODE_VALUE(list, node, NODE_STRING).len, NODE_VALUE(list, node, NODE_STRING).raw);
+        break;
+        
+    case NODE_IDENT:
+        printf("%.*s", NODE_VALUE(list, node, NODE_IDENT).len, NODE_VALUE(list, node, NODE_IDENT).raw);
+        break;
+        
+    case NODE_CONS:
+        NodeList_prettyPrintNode(list, NODE_VALUE(list, node, NODE_CONS).data);
+        NodeIndex next = NODE_VALUE(list, node, NODE_CONS).next;
+        if(NODE_TY(list, next) != NODE_NULL) {
+            NodeList_prettyPrintNode(list, next);
+        }
+        break;
+        
+    case NODE_LIST:
+        printf("(");
+        NodeList_prettyPrintNode(list, NODE_VALUE(list, node, NODE_LIST));
+        printf(")");
+        break;
+    case NODE_SCOPE:
+        printf("(");
+        NodeList_prettyPrintNode(list, NODE_VALUE(list, node, NODE_SCOPE));
+        printf(")");
+        break;
+
+    case NODE_APPLICATION:
+        NodeList_prettyPrintNode(list, NODE_VALUE(list, node, NODE_APPLICATION).fn);
 
         printf("(");
-        ASTList_prettyPrint(list, indentation, AST_VALUE(list, node, AST_APPLICATION).arg);
+        NodeList_prettyPrintNode(list, NODE_VALUE(list, node, NODE_APPLICATION).arg);
         printf(")");
         break;
         
-    case AST_ABSTRACTION:
+    case NODE_ABSTRACTION:
         printf("(");
         printf("fn ");
         
-        ASTList_prettyPrint(list, indentation, AST_VALUE(list, node, AST_ABSTRACTION).arg);
+        NodeList_prettyPrintNode(list, NODE_VALUE(list, node, NODE_ABSTRACTION).arg);
 
         printf(" -> ");
         
-        ASTList_prettyPrint(list, indentation, AST_VALUE(list, node, AST_ABSTRACTION).body);
+        NodeList_prettyPrintNode(list, NODE_VALUE(list, node, NODE_ABSTRACTION).body);
         printf(")");
         break;
 
         
-    case AST_LET:
+    case NODE_LET:
         printf("(");
         printf("let ");
         
-        ASTList_prettyPrint(list, indentation, AST_VALUE(list, node, AST_LET).name);
+        NodeList_prettyPrintNode(list, NODE_VALUE(list, node, NODE_LET).name);
 
         printf(" = ");
         
-        ASTList_prettyPrint(list, indentation, AST_VALUE(list, node, AST_LET).value);
+        NodeList_prettyPrintNode(list, NODE_VALUE(list, node, NODE_LET).value);
         
         printf(" in ");
 
-        ASTList_prettyPrint(list, indentation, AST_VALUE(list, node, AST_LET).in);
+        NodeList_prettyPrintNode(list, NODE_VALUE(list, node, NODE_LET).in);
 
         printf(")");
         break;
-    case AST_IF:
+    case NODE_IF:
         printf("(");
         printf("if ");
         
-        ASTList_prettyPrint(list, indentation, AST_VALUE(list, node, AST_IF).cond);
+        NodeList_prettyPrintNode(list, NODE_VALUE(list, node, NODE_IF).cond);
 
         printf(" then ");
         
-        ASTList_prettyPrint(list, indentation, AST_VALUE(list, node, AST_IF).t);
+        NodeList_prettyPrintNode(list, NODE_VALUE(list, node, NODE_IF).t);
         
         printf(" else ");
 
-        ASTList_prettyPrint(list, indentation, AST_VALUE(list, node, AST_IF).f);
+        NodeList_prettyPrintNode(list, NODE_VALUE(list, node, NODE_IF).f);
 
         printf(")");
         break;
         
-    case AST_DEFINE:
+    case NODE_DEFINE:
         printf("define ");
         
-        ASTList_prettyPrint(list, indentation, AST_VALUE(list, node, AST_DEFINE).name);
+        NodeList_prettyPrintNode(list, NODE_VALUE(list, node, NODE_DEFINE).name);
 
         printf(" = ");
         
-        ASTList_prettyPrint(list, indentation, AST_VALUE(list, node, AST_DEFINE).body);
+        NodeList_prettyPrintNode(list, NODE_VALUE(list, node, NODE_DEFINE).body);
         
         printf(";");
         break;
-    case AST_TYPEDEF:
+    case NODE_TYPEDEF:
         printf("type ");
         
-        ASTList_prettyPrint(list, indentation, AST_VALUE(list, node, AST_TYPEDEF).name);
+        NodeList_prettyPrintNode(list, NODE_VALUE(list, node, NODE_TYPEDEF).name);
 
         printf(" = ");
         
-        ASTList_prettyPrint(list, indentation, AST_VALUE(list, node, AST_TYPEDEF).type);
+        NodeList_prettyPrintNode(list, NODE_VALUE(list, node, NODE_TYPEDEF).type);
         
         printf(";");
         break;
-    case AST_ANNOTATE:
+    case NODE_ANNOTATE:
         printf("(");
         
-        ASTList_prettyPrint(list, indentation, AST_VALUE(list, node, AST_ANNOTATE).expression);
+        NodeList_prettyPrintNode(list, NODE_VALUE(list, node, NODE_ANNOTATE).expression);
         
         printf(" :: ");
         
-        ASTList_prettyPrint(list, indentation, AST_VALUE(list, node, AST_ANNOTATE).type);
+        NodeList_prettyPrintNode(list, NODE_VALUE(list, node, NODE_ANNOTATE).type);
        
         printf(")");
         break;
-    case AST_APPLICATION_TYPE:
-        ASTList_prettyPrint(list, indentation, AST_VALUE(list, node, AST_APPLICATION_TYPE).fn);
+    case NODE_APPLICATION_TYPE:
+        NodeList_prettyPrintNode(list, NODE_VALUE(list, node, NODE_APPLICATION_TYPE).fn);
         
         printf(" -> ");
         
-        ASTList_prettyPrint(list, indentation, AST_VALUE(list, node, AST_APPLICATION_TYPE).arg);
+        NodeList_prettyPrintNode(list, NODE_VALUE(list, node, NODE_APPLICATION_TYPE).arg);
         break;
     }
+}
+
+void NodeList_prettyPrint(NodeList* list,  NodeIndex root) {
+    NodeList_prettyPrintNode(list, root);
+    printf("\n");
 }

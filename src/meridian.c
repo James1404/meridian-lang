@@ -1,5 +1,6 @@
 #include "meridian.h"
 #include "meridian_ast.h"
+#include "meridian_env.h"
 #include "meridian_error.h"
 #include "meridian_lex.h"
 #include "meridian_parser.h"
@@ -10,7 +11,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void Meridian_run(String src) {
+void Meridian_run(String src, Env* env) {
     TokenList tokens = TokenList_make(src);
     
     Lexer lexer = Lexer_new(&tokens);
@@ -18,24 +19,19 @@ void Meridian_run(String src) {
 
     if(Meridian_error_found()) return;
 
-    ASTList initialAST = ASTList_make();
-
-    Parser parser = Parser_make(&tokens, &initialAST);
+    Parser parser = Parser_make(&tokens, &env->nodes);
     Parser_run(&parser);
+
+    NodeList_prettyPrint(&env->nodes, parser.root);
 
     if(Meridian_error_found()) return;
 
-    RunTypeChecker(&initialAST, parser.root);
-
-    ASTList_prettyPrint(&initialAST, 0, parser.root);
-
     Parser_free(&parser);
-    ASTList_free(&initialAST);
     Lexer_free(&lexer);
     TokenList_free(&tokens);
 }
 
-void Meridian_run_file(String filepath) {
+void Meridian_run_file(String filepath, Env* env) {
     String nullterminated;
     STR_CPY_ALLOC_NULL(nullterminated, filepath);
     
@@ -58,5 +54,7 @@ void Meridian_run_file(String filepath) {
     }
     fclose(file);
 
-    Meridian_run((String) { buffer, len });
+    STR_FREE(nullterminated);
+
+    Meridian_run((String) { buffer, len }, env);
 }

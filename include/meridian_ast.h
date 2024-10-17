@@ -4,120 +4,119 @@
 #include "meridian_common.h"
 #include "meridian_string.h"
 #include "meridian_tokens.h"
+#include "meridian_arena.h"
 
-typedef u64 AST_Idx;
+typedef u64 NodeIndex;
 
-typedef struct AST {
+typedef struct {
+  NodeIndex data, next;
+} Cons;
+
+typedef struct Node {
     enum {
-        AST_NULL,
+        NODE_NULL,
         
-        AST_INTEGER,
-        AST_FLOAT,
+        NODE_INTEGER,
+        NODE_FLOAT,
 
-        AST_BOOLEAN,
-        AST_STRING,
+        NODE_BOOLEAN,
+        NODE_STRING,
 
-        AST_IDENT,
+        NODE_IDENT,
+
+        NODE_CONS,
         
-        AST_CONS,
+        NODE_LIST,
 
-        AST_LIST,
+        NODE_SCOPE,
 
-        AST_SCOPE,
+        NODE_APPLICATION,
+        NODE_ABSTRACTION,
 
-        AST_APPLICATION,
-        AST_ABSTRACTION,
+        NODE_LET,
 
-        AST_LET,
-
-        AST_IF,
+        NODE_IF,
         
-        AST_DEFINE,
-        AST_TYPEDEF,
+        NODE_DEFINE,
+        NODE_TYPEDEF,
 
-        AST_ANNOTATE,
+        NODE_ANNOTATE,
 
-        AST_APPLICATION_TYPE,
+        NODE_APPLICATION_TYPE,
     } tag;
     union {
-        i64 AST_INTEGER;
-        f64 AST_FLOAT;
-        bool AST_BOOLEAN;
-        String AST_STRING;
+        i64 NODE_INTEGER;
+        f64 NODE_FLOAT;
+        bool NODE_BOOLEAN;
+        String NODE_STRING;
 
-        String AST_IDENT;
+        String NODE_IDENT;
 
-        struct {
-            AST_Idx data, next;
-        } AST_CONS;
+        Cons NODE_CONS;
+        
+        NodeIndex NODE_LIST;
+        NodeIndex NODE_SCOPE;
         
         struct {
-            AST_Idx start;
-        } AST_LIST;
-        
+            NodeIndex fn;
+            NodeIndex arg;
+        } NODE_APPLICATION;
         struct {
-            AST_Idx start;
-        } AST_SCOPE;
-        
-        struct {
-            AST_Idx fn;
-            AST_Idx arg;
-        } AST_APPLICATION;
-        struct {
-            AST_Idx arg;
-            AST_Idx body;
-        } AST_ABSTRACTION;
+            NodeIndex arg;
+            NodeIndex body;
+        } NODE_ABSTRACTION;
         
 
         struct {
-            AST_Idx name;
-            AST_Idx value;
+            NodeIndex name;
+            NodeIndex value;
 
-            AST_Idx in;
-        } AST_LET;
-
-        struct {
-            AST_Idx cond, t, f;
-        } AST_IF;
+            NodeIndex in;
+        } NODE_LET;
 
         struct {
-            AST_Idx name, body;
-        } AST_DEFINE;
-        struct {
-            AST_Idx name, type;
-        } AST_TYPEDEF;
+            NodeIndex cond, t, f;
+        } NODE_IF;
 
         struct {
-            AST_Idx expression, type;
-        } AST_ANNOTATE;
+            NodeIndex name, body;
+        } NODE_DEFINE;
+        struct {
+            NodeIndex name, type;
+        } NODE_TYPEDEF;
 
-        struct { AST_Idx fn, arg; } AST_APPLICATION_TYPE;
+        struct {
+            NodeIndex expression, type;
+        } NODE_ANNOTATE;
+
+        struct { NodeIndex fn, arg; } NODE_APPLICATION_TYPE;
     } payload;
 
     Token token;
-} AST;
+} Node;
 
 typedef struct {
-    AST* data;
-    AST_Idx len, allocated;
-} ASTList;
+    Node* data;
+    NodeIndex len, allocated;
+} NodeList;
 
-ASTList ASTList_make(void);
-void ASTList_free(ASTList *list);
+NodeList NodeList_make(void);
+void NodeList_free(NodeList *list);
 
-AST_Idx ASTList_alloc(ASTList *list, AST node);
+NodeIndex NodeList_alloc(NodeList *list, Node node);
 
-void ASTList_prettyPrint(ASTList* list, u64 indentation, AST_Idx node);
+void NodeList_prettyPrint(NodeList* list, NodeIndex root);
 
-#define AST_MAKE(token, list, tag) (ASTList_alloc(list, (AST){tag, {0}, token}))
-#define AST_MAKE_V(token, list, tag, value)                                    \
-  (ASTList_alloc(list, (AST){tag, {.tag = value}, token}))
-#define AST_MAKE_S(token, list, tag, ...)                                      \
-  (ASTList_alloc(list, (AST){tag, {.tag = {__VA_ARGS__}}, token}))
+#define NODE_MAKE(token, env, tag)                                             \
+  (NodeList_alloc((env), (Node){tag, {0}, token}))
+#define NODE_MAKE_V(token, env, tag, value)                                    \
+  (NodeList_alloc((env), (Node){tag, {.tag = value}, token}))
+#define NODE_MAKE_S(token, env, tag, ...)                                      \
+  (NodeList_alloc((env), (Node){tag, {.tag = {__VA_ARGS__}}, token}))
 
-#define AST_GET(list, idx) ((list)->data + idx)
+#define NODE_GET(env, idx) ((env)->data + idx)
 
-#define AST_TY(list, idx) (AST_GET(list, idx)->tag)
-#define AST_VALUE(list, idx, tag) (AST_GET(list, idx)->payload.tag)
+#define NODE_TY(env, idx) (NODE_GET((env), idx)->tag)
+#define NODE_VALUE(env, idx, tag) (NODE_GET((env), idx)->payload.tag)
 
 #endif//MERIDIAN_AST_H

@@ -1,3 +1,2 @@
-def double = fn x -> x;
-def g = double 2;
-def p = g :: Float;
+def id = fn x -> x;
+def g = (id true) :: Bool;

@@ -19,5 +19,5 @@ void Program_opcode(Program *program, u8 opcode) {
 void Program_byte(Program *program, u8 byte) {
 }
 
-void AST_CodeGen(Program* program, ASTList list, AST_Idx node) {
+void Program_codegen(Program* program, NodeList list, NodeIndex node) {
 }

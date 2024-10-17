@@ -13,9 +13,9 @@
 #include <llvm/IR/Type.h>
 #include <llvm/IR/Verifier.h>
 
-Codegen Codegen_init(ASTList *list, AST_Idx root) {
+Codegen Codegen_init(NodeList *list, NodeIndex root) {
     return { list, root };
 }
 
 void Codegen_free(Codegen *gen) {}
-void Codegen_run(Codegen *gen, AST *tree) {}
+void Codegen_run(Codegen *gen, Node *tree) {}

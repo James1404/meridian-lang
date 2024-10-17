@@ -3,106 +3,53 @@
 
 #include "meridian_common.h"
 #include "meridian_string.h"
-#include "meridian_ast.h"
-#include "meridian_arena.h"
 
-typedef u64 TypeIdx;
+typedef u64 TypeIndex;
 
 typedef enum {
-  TYPE_NOT_FOUND,
-  TYPE_UNKNOWN,
+    TYPE_NOT_FOUND,
+    TYPE_UNKNOWN,
 
-  TYPE_UNIT,
-  TYPE_INT,
-  TYPE_FLOAT,
-  TYPE_BOOLEAN,
-  TYPE_STRING,
+    TYPE_UNIT,
+    TYPE_INT,
+    TYPE_FLOAT,
+    TYPE_BOOLEAN,
+    TYPE_STRING,
 
-  TYPE_FN,
+    TYPE_FN,
 
-  TYPE_EXISTS,
-  TYPE_FORALL,
+    TYPE_EXISTS,
+    TYPE_FORALL,
 } TypeTag;
 
 typedef struct {
     TypeTag tag;
     union {
         struct {
-            TypeIdx arg, body;
+            TypeIndex arg, body;
         } TYPE_FN;
-
-        /* struct { */
-        /*     bool solved; */
-        /*     TypeIdx monotype; */
-        /* } TYPE_EXISTS; */
-        /* struct {} TYPE_FORALL; */
     } payload;
 } Type;
 
-#define TYPE_MAKE(env, tag) (TypeEnv_alloc((env), (Type) {tag}))
-#define TYPE_MAKE_V(env, tag, value) (TypeEnv_alloc((env), (Type){tag, .payload.tag = value}))
-#define TYPE_MAKE_S(env, tag, ...) (TypeEnv_alloc((env), (Type){tag, .payload.tag = {__VA_ARGS__}}))
+#define TYPE_MAKE(env, tag) (TypeAllocator_alloc((env), (Type) {tag}))
+#define TYPE_MAKE_V(env, tag, value) (TypeAllocator_alloc((env), (Type){tag, .payload.tag = value}))
+#define TYPE_MAKE_S(env, tag, ...) (TypeAllocator_alloc((env), (Type){tag, .payload.tag = {__VA_ARGS__}}))
 
-#define TYPE_GET(env, idx) ((env)->typelist + idx)
+#define TYPE_GET(env, idx) ((env)->data + idx)
 #define TYPE_VALUE(env, idx, tag) (TYPE_GET(env, idx)->payload.tag)
 #define TYPE_TAG(env, idx) (TYPE_GET(env, idx)->tag)
 
 #define TYPE_SET(env, lhs, rhs) *(TYPE_GET(env, lhs)) = *(TYPE_GET(env, rhs))
 
 typedef struct {
-    String name;
-    
-    TypeIdx ty;
-    u64 scope;
-} LocalType;
+    Type* data;
+    usize len, allocated;
+} TypeAllocator;
 
-typedef struct {
-    LocalType* locals;
-    u64 len, allocated, scope;
+TypeAllocator TypeAllocator_make(void);
+void TypeAllocator_free(TypeAllocator *allocator);
+TypeIndex TypeAllocator_alloc(TypeAllocator *allocator, Type type);
 
-    Type* typelist;
-    u64 typelistLen, typelistAllocated;
-
-    u64 universalQuantifiers;
-
-    bool complete;
-
-    Arena arena;
-} TypeEnv;
-
-TypeEnv TypeEnv_make(void);
-void TypeEnv_free(TypeEnv *env);
-
-TypeIdx TypeEnv_alloc(TypeEnv* env, Type ty);
-
-bool TypeEnv_isMonoType(TypeEnv *env, TypeIdx i);
-bool TypeEnv_isPolyType(TypeEnv *env, TypeIdx i);
-
-bool TypeEnv_eq(TypeEnv* env, TypeIdx l, TypeIdx r);
-String TypeEnv_toString(TypeEnv* env, TypeIdx ty);
-
-void TypeEnv_inc(TypeEnv *env);
-void TypeEnv_dec(TypeEnv* env);
-
-void TypeEnv_set(TypeEnv *env, String name, TypeIdx ty);
-TypeIdx TypeEnv_get(TypeEnv *env, String name);
-bool TypeEnv_has(TypeEnv* env, String name);
-
-bool TypeCheck(TypeEnv* env, ASTList* tree, AST_Idx node, TypeIdx expected);
-TypeIdx TypeInfer(TypeEnv *env, ASTList *tree, AST_Idx node);
-
-void TypeEnv_insertAST(TypeEnv* env, ASTList* tree, AST_Idx node, TypeIdx type);
-TypeIdx GetTypeFromAST(TypeEnv *env, ASTList *tree, AST_Idx node);
-
-void TypeCheckScope(ASTList* tree, AST_Idx node);
-
-bool TypeEnv_occursCheck(TypeEnv* env, TypeIdx a, TypeIdx against);
-
-TypeIdx TypeEnv_instantiateL(TypeEnv *env, TypeIdx mono);
-TypeIdx TypeEnv_instantiateR(TypeEnv *env, TypeIdx mono);
-
-TypeIdx TypeEnv_GetTypeName(TypeEnv* env, String id);
-
-void RunTypeChecker(ASTList* tree, AST_Idx root);
+TypeIndex TypeAllocator_getTypeName(TypeAllocator *allocator, String name);
 
 #endif//MERIDIAN_TYPES_H

@@ -30,6 +30,8 @@ GPERF := $(shell find $(SRC_DIR)/ -type f -iname \*.gperf)
 GPERF_SRC := $(patsubst %.gperf,%.c,$(GPERF))
 
 SRC := $(shell find $(SRC_DIR)/ -type f \( -iname \*.c -o -iname \*.cpp \))
+SRC := $(filter-out src/meridian_typechecker.c, ${SRC})
+SRC := $(filter-out src/meridian_opcodes.c, ${SRC})
 
 SRC += $(GPERF_SRC)
 
@@ -42,7 +44,7 @@ $(BUILD_DIR)/$(EXE): $(OBJ) | $(BUILD_DIR) $(CACHE_DIR) $(BUILD_DIR)/$(TEST_DIR)
 	@$(CPP) -o $@ $^ $(LDFLAGS)
 
 run: $(BUILD_DIR)/$(EXE)
-	@(cd $(BUILD_DIR) && ./$(EXE))
+	@(cd $(BUILD_DIR) && ./$(EXE) run)
 
 repl: $(BUILD_DIR)/$(EXE)
 	@(cd $(BUILD_DIR) && ./$(EXE) repl)

@@ -3,9 +3,6 @@
 #include <stdio.h>
 
 void ParseArguments(int argc, char** argv, Argument validArgs[], int validArgsLen) {
-    argc--;
-    argv++;
-
     if(argc <= 0) {
         printf("Expected arguments\n");
 

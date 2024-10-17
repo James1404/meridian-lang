@@ -1,4 +1,5 @@
 #include "meridian.h"
+#include "meridian_env.h"
 #include "meridian_string.h"
 #include "meridian_args_parser.h"
 #include "meridian_error.h"
@@ -14,6 +15,8 @@ void versionParser(int argc, char** argv) {
 }
 
 void replParser(int argc, char** argv) {
+    Env env = Env_make();
+    
     while(running) {
         printf("* ");
         char string[REPL_LEN];
@@ -21,16 +24,24 @@ void replParser(int argc, char** argv) {
             Meridian_error("fgets failed");
         }
 
-        Meridian_run((String) { string, strlen(string) });
-        printf("\n");
+        Meridian_run(STR(string), &env);
     }
+
+    Env_free(&env);
 }
 
 void runParser(int argc, char** argv) {
-    Meridian_error("Todo");
+    Env env = Env_make();
+        
+    Meridian_run_file(STR("test/lexer.mr"), &env);
+    
+    Env_free(&env);
 }
 
 int main(int argc, char** argv) {
+    argc--;
+    argv++;
+    
     Argument validArguments[] = {
         MAKE_ARGUMENT("version", "output the version of your installed compiler", &versionParser),
         MAKE_ARGUMENT("run", "run the provided file", &runParser),

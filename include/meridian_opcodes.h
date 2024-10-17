@@ -57,6 +57,6 @@ void Program_free(Program *program);
 void Program_opcode(Program *program, u8 opcode);
 void Program_constant(Program *program, Value value);
 
-void AST_CodeGen(Program* program, ASTList list, AST_Idx node);
+void Program_codegen(Program* program, NodeList list, NodeIndex node);
 
 #endif//MERIDIAN_OPCODES_H
